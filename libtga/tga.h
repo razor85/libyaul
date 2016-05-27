@@ -26,8 +26,7 @@ extern "C" {
  * @{ */
 
 /**
- * @enum tga_status Status
- * @brief TGA status */
+ * @enum tga_status TGA Status */
 typedef enum {
         TGA_OP_SUCCESS = 0, /**< TGA operation was successful */
         TGA_OP_FAILURE = -1, /**< TGA unknown operation failure */
@@ -39,9 +38,9 @@ typedef enum {
 } tga_status;
 
 /**
- * @brief TGA */
+ * @brief TGA state */
 typedef struct {
-        const void *tga_context; /**< Context */
+        const void *tga_context; /**< Context opaque pointer */
 
         /**
          * @brief User modifiable options
@@ -59,10 +58,10 @@ typedef struct {
  *
  * Parses buffer and allocates a private TGA context.
  *
- * @param[in] tga TGA opaque pointer
- * @param[in] file Read-only pointer to TGA file buffer
+ * @param tga TGA state pointer
+ * @param file Read-only pointer to TGA file buffer
  *
- * @return @ref tga_status.TGA_FILE_OK if reading TGA file buffer was
+ * @return @ref tga_status.TGA_OP_SUCCESS if reading TGA file buffer was
  *         successful.
  * @return @ref tga_status.TGA_FILE_CORRUPTED if TGA header is corrupted.
  * @return @ref tga_status.TGA_FILE_NOT_SUPPORTED if a feature set in the TGA is
@@ -82,10 +81,10 @@ tga_status tga_read(tga *tga, const uint8_t *file);
  * cells and sequentially written to memory, starting from the top-left corner
  * of the image buffer.
  *
- * @param[in] tga TGA opaque pointer
- * @param[out] dst Pointer to buffer to write to
+ * @param tga TGA state pointer
+ * @param dst Pointer to buffer to write to
  *
- * @return @ref tga_status.TGA_FILE_OK if reading TGA file buffer was
+ * @return @ref tga_status.TGA_OP_SUCCESS if reading TGA file buffer was
  *         successful.
  * @return @ref tga_status.TGA_FILE_CORRUPTED if TGA header is corrupted.
  * @return @ref tga_status.TGA_FILE_NOT_SUPPORTED if a feature set in the TGA is
@@ -103,10 +102,10 @@ tga_status tga_image_decode_tiled(const tga *tga, void *dst);
  * @details The entire image is treated as a bitmap. Specifically, each pixel
  * (whether indexed or RGB) is sequentially written to memory.
  *
- * @param[in] tga TGA opaque pointer
- * @param[out] dst Pointer to buffer to write to
+ * @param tga TGA state pointer
+ * @param dst Pointer to buffer to write to
  *
- * @return @ref tga_status.TGA_FILE_OK if reading TGA file buffer was
+ * @return @ref tga_status.TGA_OP_SUCCESS if reading TGA file buffer was
  *         successful.
  * @return @ref tga_status.TGA_FILE_CORRUPTED if TGA header is corrupted.
  * @return @ref tga_status.TGA_FILE_NOT_SUPPORTED if a feature set in the TGA is
@@ -127,10 +126,10 @@ tga_status tga_image_decode(const tga *tga, void *dst);
  * Depending on what options were set in @ref tga.tga_options, the MSB of each
  * color may or may not be set.
  *
- * @param[in] tga TGA opaque pointer
- * @param[out] dst Pointer to buffer to write to
+ * @param tga TGA state pointer
+ * @param dst Pointer to buffer to write to
  *
- * @return @ref tga_status.TGA_FILE_OK if reading TGA file buffer was
+ * @return @ref tga_status.TGA_OP_SUCCESS if reading TGA file buffer was
  *         successful.
  * @return @ref tga_status.TGA_FILE_CORRUPTED if TGA header is corrupted.
  * @return @ref tga_status.TGA_FILE_NOT_SUPPORTED if a feature set in the TGA is
@@ -141,7 +140,7 @@ tga_status tga_cmap_decode(const tga *tga, uint16_t *dst);
 /**
  * @brief Convert TGA status (@ref tga_status) to a string.
  *
- * @param[in] status Status value from @ref tga_status
+ * @param status Status value from @ref tga_status
  *
  * @return Read-only string equivalent of @ref tga_status member
  */
