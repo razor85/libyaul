@@ -11,51 +11,87 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+/** @file */
+/** @defgroup libtga libtga */
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-#define TGA_FILE_OK                     0
-#define TGA_FILE_UNKNOWN_FORMAT         -1
-#define TGA_FILE_CORRUPTED              -2
-#define TGA_FILE_NOT_SUPPORTED          -3
-#define TGA_MEMORY_ERROR                -4
-#define TGA_MEMORY_UNALIGNMENT_ERROR    -5
+/**
+ * @addtogroup libtga
+ * @brief Basic library to parse Truevision TGA (TARGA) files
+ *
+ * @{ */
 
+/**
+ * @enum tga_status Status
+ * @brief TGA status */
+typedef enum {
+        TGA_FILE_OK, /**< Success */
+        TGA_FILE_UNKNOWN_FORMAT, /**< TGA header could not be parsed */
+        TGA_FILE_CORRUPTED, /**< TGA header is corrupted */
+        TGA_FILE_NOT_SUPPORTED, /**< TGA feature is unsupported */
+        TGA_MEMORY_ERROR, /**< TGA memory error */
+        TGA_MEMORY_UNALIGNMENT_ERROR /**< TGA address is unaligned (not on a 2 or 4-byte boundary) */
+} tga_status;
+
+/**
+ * @brief TGA */
 typedef struct {
-        const char *tga_file;
+        const void *tga_context; /**< Context */
 
-#define TGA_IMAGE_TYPE_NONE             0
-#define TGA_IMAGE_TYPE_CMAP             1
-#define TGA_IMAGE_TYPE_TRUE_COLOR       2
-#define TGA_IMAGE_TYPE_GRAYSCALE        3
-#define TGA_IMAGE_TYPE_RLE_CMAP         9
-#define TGA_IMAGE_TYPE_RLE_TRUE_COLOR   10
-#define TGA_IMAGE_TYPE_RLE_GRAYSCALE    11
-        uint8_t tga_type;
-
-        uint8_t tga_bpp;
-        uint16_t tga_width;
-        uint16_t tga_height;
-
-        uint8_t tga_cmap_bpp;
-        uint16_t tga_cmap_len;
-        uint32_t tga_cmap_bytes;
-
-        /* User modifiable */
+        /**
+         * @brief User modifiable options */
         struct {
-                /* Determine the transparent pixel color (in RGB555) */
-                uint32_t transparent_pixel;
-                /* Enable setting MSB bit for transparent pixel color */
-                bool msb;
+                uint32_t transparent_pixel; /**< Determine the transparent pixel color (in RGB555) */
+                bool msb; /**< Enable setting MSB bit for transparent pixel color */
         } tga_options;
-} tga_t __attribute__ ((aligned(4)));
+} tga;
 
-int32_t tga_read(tga_t *, const uint8_t *);
-int32_t tga_image_decode_tiled(const tga_t *, void *);
-int32_t tga_image_decode(const tga_t *, void *);
-int32_t tga_cmap_decode(const tga_t *, uint16_t *);
-const char *tga_error_stringify(int);
+/**
+ * @brief Read a valid TGA from a buffer.
+ *
+ * @param[in] tga TGA opaque pointer
+ * @param[in] file Read-only pointer to TGA file buffer
+ */
+tga_status tga_read(tga *tga, const uint8_t *file);
+
+/**
+ * @brief Decode image as a tiles and write each tile sequentially to memory.
+ *
+ * @param[in] tga TGA opaque pointer
+ * @param[out] dst Pointer to buffer to write to
+ */
+tga_status tga_image_decode_tiled(const tga *tga, void *dst);
+
+/**
+ * @brief Decode image and write raw buffer of color pixels to memory.
+ *
+ * @param[in] tga TGA opaque pointer
+ * @param[out] dst Pointer to buffer to write to
+ */
+tga_status tga_image_decode(const tga *tga, void *dst);
+
+/**
+ * @brief Decode color map (palette) and write to memory.
+ *
+ * @param[in] tga TGA opaque pointer
+ * @param[out] dst Pointer to buffer to write to
+ *
+ * @return Status
+ */
+tga_status tga_cmap_decode(const tga *tga, uint16_t *dst);
+
+/**
+ * @brief Convert TGA status (@ref tga_status) to a string.
+ *
+ * @param[in] status Status value from @ref tga_status
+ *
+ * @return Read-only string equivalent of @ref tga_status member
+ */
+const char *tga_error_stringify(tga_status status);
+/** @} */
 
 #ifdef __cplusplus
 }
