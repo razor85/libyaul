@@ -187,7 +187,7 @@ tga_read(tga *tga, const uint8_t *file)
         tga->tga_cmap_len = cmap_len;
         tga->tga_cmap_bytes = cmap_bytes;
 
-        return TGA_FILE_OK;
+        return TGA_OP_OK;
 }
 
 int32_t
@@ -299,7 +299,7 @@ const char *
 tga_error_stringify(int error)
 {
         switch (error) {
-        case TGA_FILE_OK:
+        case TGA_OP_OK:
                 return "File OK";
         case TGA_FILE_UNKNOWN_FORMAT:
                 return "File unknown format";
@@ -326,7 +326,7 @@ cmap_image_decode_tiled(uint8_t *dst, const tga *tga)
                 }
         }
 
-        return TGA_FILE_OK;
+        return TGA_OP_OK;
 }
 
 static int32_t
