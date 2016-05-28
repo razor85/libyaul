@@ -14,12 +14,24 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/**
+ * @file */
+
+/**
+ * @file
+ * @addtogroup libbcl
+ * @brief Basic library of decrompression libraries
+ * @{ */
+
 uint32_t prs_decompress_size(void *);
 void Huffman_Uncompress(uint8_t *, uint8_t *, uint32_t, uint32_t);
 void LZ_Uncompress(uint8_t *, uint8_t *, uint32_t);
 void RLE_Uncompress(uint8_t *, uint8_t *, uint32_t);
 void Rice_Uncompress(void *, void *, uint32_t, uint32_t, int);
 void SF_Uncompress(uint8_t *, uint8_t *, uint32_t, uint32_t);
+
+/**
+ * @} */
 
 #ifdef __cplusplus
 }

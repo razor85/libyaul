@@ -31,6 +31,28 @@
 #define TGA_HEADER_LEN  18
 #define TGA_FOOTER_LEN  26
 
+#define TGA_IMAGE_TYPE_NONE             0
+#define TGA_IMAGE_TYPE_CMAP             1
+#define TGA_IMAGE_TYPE_TRUE_COLOR       2
+#define TGA_IMAGE_TYPE_GRAYSCALE        3
+#define TGA_IMAGE_TYPE_RLE_CMAP         9
+#define TGA_IMAGE_TYPE_RLE_TRUE_COLOR   10
+#define TGA_IMAGE_TYPE_RLE_GRAYSCALE    11
+
+typedef struct tga_context {
+        const char *file;
+
+        uint8_t type;
+
+        uint8_t bpp;
+        uint16_t width;
+        uint16_t height;
+
+        uint8_t cmap_bpp;
+        uint16_t cmap_len;
+        uint32_t cmap_bytes;
+} tga_context;
+
 static int32_t cmap_image_decode_tiled(uint8_t *, const tga_t *);
 static int32_t cmap_rle_image_decode_tiled(uint16_t *, const tga_t *);
 static int32_t cmap_image_decode(uint8_t *, const tga_t *);
@@ -47,7 +69,7 @@ static inline uint32_t _image_calculate_offset(const tga_t *);
 static inline uint32_t _cmap_calculate_offset(const tga_t *);
 
 int32_t
-tga_read(tga_t *tga, const uint8_t *file)
+tga_read(tga *tga, const uint8_t *file)
 {
 #define TGA_IMAGE_ORIGIN_BOTTOM 0x00
 #define TGA_IMAGE_ORIGIN_TOP    0x20
@@ -153,9 +175,9 @@ tga_read(tga_t *tga, const uint8_t *file)
                 return TGA_FILE_NOT_SUPPORTED;
         }
 
-        tga->tga_file = header;
+        tga->tga_context->file = header;
 
-        tga->tga_type = image_type;
+        tga->tga_contexn->tgaype = image_type;
 
         tga->tga_bpp = bpp;
         tga->tga_width = width;
@@ -165,18 +187,18 @@ tga_read(tga_t *tga, const uint8_t *file)
         tga->tga_cmap_len = cmap_len;
         tga->tga_cmap_bytes = cmap_bytes;
 
-        return TGA_FILE_OK;
+        return TGA_OP_OK;
 }
 
 int32_t
-tga_image_decode_tiled(const tga_t *tga, void *dst)
+tga_image_decode_tiled(const tga *tga, void *dst)
 {
         /* XXX: Check if tga is valid */
         const uint8_t *image_buf;
         image_buf = (const uint8_t *)((uint32_t)tga->tga_file +
             _image_calculate_offset(tga));
 
-        switch (tga->tga_type) {
+        switch (tga->tgaype) {
         case TGA_IMAGE_TYPE_GRAYSCALE:
         case TGA_IMAGE_TYPE_RLE_GRAYSCALE:
                 return TGA_FILE_NOT_SUPPORTED;
@@ -194,14 +216,14 @@ tga_image_decode_tiled(const tga_t *tga, void *dst)
 }
 
 int32_t
-tga_image_decode(const tga_t *tga, void *dst)
+tga_image_decode(const tga *tga, void *dst)
 {
         /* XXX: Check if tga is valid */
         const uint8_t *image_buf;
         image_buf = (const uint8_t *)((uint32_t)tga->tga_file +
             _image_calculate_offset(tga));
 
-        switch (tga->tga_type) {
+        switch (tga->tgaype) {
         case TGA_IMAGE_TYPE_GRAYSCALE:
         case TGA_IMAGE_TYPE_RLE_GRAYSCALE:
                 return TGA_FILE_NOT_SUPPORTED;
@@ -219,10 +241,10 @@ tga_image_decode(const tga_t *tga, void *dst)
 }
 
 int32_t
-tga_cmap_decode(const tga_t *tga, uint16_t *dst)
+tga_cmap_decode(const tga *tga, uint16_t *dst)
 {
-        if ((tga->tga_type != TGA_IMAGE_TYPE_CMAP) &&
-            (tga->tga_type != TGA_IMAGE_TYPE_RLE_CMAP)) {
+        if ((tga->tgaype != TGA_IMAGE_TYPE_CMAP) &&
+            (tga->tgaype != TGA_IMAGE_TYPE_RLE_CMAP)) {
                 return TGA_FILE_NOT_SUPPORTED;
         }
 
@@ -277,7 +299,7 @@ const char *
 tga_error_stringify(int error)
 {
         switch (error) {
-        case TGA_FILE_OK:
+        case TGA_OP_OK:
                 return "File OK";
         case TGA_FILE_UNKNOWN_FORMAT:
                 return "File unknown format";
@@ -293,7 +315,7 @@ tga_error_stringify(int error)
 }
 
 static int32_t
-cmap_image_decode_tiled(uint8_t *dst, const tga_t *tga)
+cmap_image_decode_tiled(uint8_t *dst, const tga *tga)
 {
         uint16_t tx;
         uint16_t ty;
@@ -304,18 +326,18 @@ cmap_image_decode_tiled(uint8_t *dst, const tga_t *tga)
                 }
         }
 
-        return TGA_FILE_OK;
+        return TGA_OP_OK;
 }
 
 static int32_t
 cmap_rle_image_decode_tiled(uint16_t *dst __attribute__ ((unused)),
-    const tga_t *tga __attribute__ ((unused)))
+    const tga *tga __attribute__ ((unused)))
 {
         return TGA_FILE_NOT_SUPPORTED;
 }
 
 static int32_t
-cmap_image_decode(uint8_t *dst, const tga_t *tga)
+cmap_image_decode(uint8_t *dst, const tga *tga)
 {
         uint32_t pixel_idx;
 
@@ -342,13 +364,13 @@ cmap_image_decode(uint8_t *dst, const tga_t *tga)
 
 static int32_t
 cmap_rle_image_decode(uint16_t *dst __attribute__ ((unused)),
-    const tga_t *tga __attribute__ ((unused)))
+    const tga *tga __attribute__ ((unused)))
 {
         return TGA_FILE_NOT_SUPPORTED;
 }
 
 static int32_t
-true_color_image_decode(uint16_t *dst, const tga_t *tga)
+true_color_image_decode(uint16_t *dst, const tga *tga)
 {
         uint32_t pixel_idx;
 
@@ -395,7 +417,7 @@ true_color_image_decode(uint16_t *dst, const tga_t *tga)
 }
 
 static int32_t
-true_color_rle_image_decode(uint16_t *dst, const tga_t *tga)
+true_color_rle_image_decode(uint16_t *dst, const tga *tga)
 {
 #define TGA_PACKET_TYPE_RLE 1
 #define TGA_PACKET_TYPE_RAW 0
@@ -499,7 +521,7 @@ true_color_rle_image_decode(uint16_t *dst, const tga_t *tga)
 }
 
 static inline void
-_cmap_image_tile_draw(uint8_t *dst, uint16_t tx, uint16_t ty, const tga_t *tga)
+_cmap_image_tile_draw(uint8_t *dst, uint16_t tx, uint16_t ty, const tga *tga)
 {
         const uint8_t *buf;
         buf = (const uint8_t *)((uint32_t)tga->tga_file +
@@ -599,7 +621,7 @@ _true_color_image_fill(uint16_t *dst, uint16_t s, size_t length)
 }
 
 static inline uint32_t
-_image_calculate_offset(const tga_t *tga)
+_image_calculate_offset(const tga *tga)
 {
         const uint8_t *header;
         header = &tga->tga_file[0];
@@ -610,7 +632,7 @@ _image_calculate_offset(const tga_t *tga)
 }
 
 static inline uint32_t
-_cmap_calculate_offset(const tga_t *tga)
+_cmap_calculate_offset(const tga *tga)
 {
         const uint8_t *header;
         header = &tga->tga_file[0];
