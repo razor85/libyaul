@@ -46,7 +46,6 @@ typedef struct {
          * @brief User modifiable options
          *
          * The options must be set prior to calling tga_read() */
-         */
         struct {
                 uint32_t transparent_pixel; /**< Determine the transparent pixel color (in RGB 555) */
                 bool msb; /**< Enable setting MSB bit for transparent pixel color */
