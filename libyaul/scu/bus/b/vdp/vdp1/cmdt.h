@@ -182,16 +182,17 @@ typedef struct vdp1_cmdt {
 
 typedef union vdp1_cmdt_draw_mode {
         struct {
-                unsigned int msb_enable:1;           /* Bit 15 */
+                unsigned int msb_enable:1;            /* Bit 15 */
                 unsigned int :2;
-                unsigned int hss_enable:1;           /* Bit 12 */
-                unsigned int pre_clipping_disable:1; /* Bit 11 */
-                unsigned int user_clipping_mode:2;   /* Bits 10-9 */
-                unsigned int mesh_enable:1;          /* Bit 8 */
-                unsigned int end_code_disable:1;     /* Bit 7 */
-                unsigned int trans_pixel_disable:1;  /* Bit 6 */
-                unsigned int color_mode:3;           /* Bits 5-3 */
-                unsigned int cc_mode:3;              /* Bits 2-0 */
+                unsigned int hss_enable:1;            /* Bit 12 */
+                unsigned int pre_clipping_disable:1;  /* Bit 11 */
+                unsigned int clipping_mode:1;         /* Bit 10 */
+                unsigned int user_clipping_enable:1;  /* Bit 9 */
+                unsigned int mesh_enable:1;           /* Bit 8 */
+                unsigned int end_code_disable:1;      /* Bit 7 */
+                unsigned int trans_pixel_disable:1;   /* Bit 6 */
+                unsigned int color_mode:3;            /* Bits 5-3 */
+                unsigned int cc_mode:3;               /* Bits 2-0 */
         } bits __aligned(2);
 
         uint16_t raw;
