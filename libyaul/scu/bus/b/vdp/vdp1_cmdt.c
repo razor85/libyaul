@@ -64,8 +64,7 @@ vdp1_cmdt_orderlist_alloc(uint16_t count)
 {
         assert(count > 0);
 
-        uint32_t size;
-        size = count * sizeof(vdp1_cmdt_t);
+        const uint32_t size = count * sizeof(vdp1_cmdt_t);
 
         uint32_t aligned_boundary;
         aligned_boundary = uint32_log2(size);
@@ -193,7 +192,7 @@ vdp1_cmdt_param_color_mode3_set(vdp1_cmdt_t *cmdt,
     vdp1_cmdt_color_bank_t color_bank)
 {
         cmdt->cmd_pmod &= 0xFFC7;
-       cmdt->cmd_pmod |= 0x0018;
+        cmdt->cmd_pmod |= 0x0018;
         cmdt->cmd_colr = color_bank.raw & 0xFF80;
 }
 
@@ -332,7 +331,7 @@ vdp1_cmdt_jump_assign(vdp1_cmdt_t *cmdt, vdp1_link_t index)
 {
         cmdt->cmd_ctrl &= 0x8FFF;
         cmdt->cmd_ctrl |= 0x1000;
-        cmdt->cmd_link = index;
+        cmdt->cmd_link = index << 2;
 }
 
 void
@@ -340,7 +339,7 @@ vdp1_cmdt_jump_call(vdp1_cmdt_t *cmdt, vdp1_link_t index)
 {
         cmdt->cmd_ctrl &= 0x8FFF;
         cmdt->cmd_ctrl |= 0x2000;
-        cmdt->cmd_link = index;
+        cmdt->cmd_link = index << 2;
 }
 
 void
@@ -348,7 +347,7 @@ vdp1_cmdt_jump_skip_assign(vdp1_cmdt_t *cmdt, vdp1_link_t index)
 {
         cmdt->cmd_ctrl &= 0x8FFF;
         cmdt->cmd_ctrl |= 0x5000;
-        cmdt->cmd_link = index;
+        cmdt->cmd_link = index << 2;
 }
 
 void
@@ -356,7 +355,7 @@ vdp1_cmdt_jump_skip_call(vdp1_cmdt_t *cmdt, vdp1_link_t index)
 {
         cmdt->cmd_ctrl &= 0x8FFF;
         cmdt->cmd_ctrl |= 0x6000;
-        cmdt->cmd_link = index;
+        cmdt->cmd_link = index << 2;
 }
 
 void
