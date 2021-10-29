@@ -37,6 +37,12 @@ struct state_vdp2 {
         vdp2_vram_ctl_t *vram_ctl;
 
         struct {
+                vdp2_vram_t vram;
+                uintptr_t buffer;
+                uint32_t count;
+        } back;
+
+        struct {
                 scu_dma_handle_t *dma_handle;
                 scu_dma_xfer_t *xfer_table;
         } commit;
@@ -44,12 +50,6 @@ struct state_vdp2 {
         struct {
                 int16_vec2_t resolution;
         } tv;
-
-        struct {
-                vdp2_vram_t *vram;
-                void *buffer;
-                uint32_t count;
-        } back;
 } __aligned(16);
 
 static inline struct state_vdp1 * __always_inline
@@ -70,6 +70,9 @@ _state_vdp2(void)
 
 extern void _internal_vdp_init(void);
 
-extern void _internal_vdp2_xfer_table_update(uint32_t);
+extern void _internal_vdp2_xfer_table_update(uint32_t xfer_index);
+
+extern void _internal_vdp2_commit(scu_dma_level_t level);
+extern void _internal_vdp2_commit_wait(scu_dma_level_t level);
 
 #endif /* !_VDP_INTERNAL_H_ */

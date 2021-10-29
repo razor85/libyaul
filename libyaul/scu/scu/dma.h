@@ -51,6 +51,16 @@ typedef enum scu_dma_mode {
         SCU_DMA_MODE_INDIRECT = 0x01
 } scu_dma_mode_t;
 
+/// @brief SCU-DMA transfer space.
+typedef enum scu_dma_space {
+        /// @brief SCU-DMA transfer space to CS2 (Chip Select), A-Bus.
+        SCU_DMA_SPACE_BUS_A,
+        /// @brief SCU-DMA transfer space to B-Bus.
+        SCU_DMA_SPACE_BUS_B,
+        /// @brief SCU-DMA transfer space to CPU-Bus.
+        SCU_DMA_SPACE_BUS_CPU
+} scu_dma_space_t;
+
 /// @brief SCU-DMA starting factors.
 typedef enum scu_dma_start_factor {
         /// @brief Start DMA transfer at VBLANK-IN.
@@ -240,6 +250,7 @@ typedef union scu_dma_xfer_type {
 ///     When allocating dynamically, use @ref memalign. Otherwise, when
 ///     statically allocating, use the @ref __aligned GCC attribute.
 typedef struct scu_dma_level_cfg {
+        scu_dma_space_t space:3;
         /// Transfer mode.
         scu_dma_mode_t mode:8;
         /// Transfer stride.
@@ -400,6 +411,20 @@ extern void scu_dma_config_buffer(scu_dma_handle_t *handle,
 extern void scu_dma_config_set(scu_dma_level_t level,
     scu_dma_start_factor_t start_factor, const scu_dma_handle_t *handle,
     scu_dma_callback_t callback);
+
+/// @brief Perform a transfer.
+///
+/// @param     level The SCU-DMA level.
+/// @param[in] dst   The pointer to write to.
+/// @param[in] src   The pointer to read from.
+/// @param     len   The amount to transfer in bytes.
+extern void scu_dma_transfer(scu_dma_level_t level, void *dst, void *src,
+    size_t len);
+
+/// @brief Wait for a transfer to complete.
+///
+/// @param level The SCU-DMA level.
+extern void scu_dma_transfer_wait(scu_dma_level_t level);
 
 /// @ingroup SCU_IC_HELPERS
 /// @brief Set the interrupt handler for the SCU-DMA level end interrupt.

@@ -111,6 +111,8 @@ scu_dma_level_wait(scu_dma_level_t level)
                 }
 
                 if ((scu_dma_level_busy(level)) == 0x00000000) {
+                        _level_state[level].flags = LEVEL_STATE_IDLING;
+
                         return;
                 }
         }
@@ -154,9 +156,11 @@ scu_dma_config_buffer(scu_dma_handle_t *handle,
                 break;
         }
 
-        /* Since bit 8 being unset is effective only for the CS2 space
-         * of the A bus, everything else should set it */
-        handle->dnad = 0x00000100 | (cfg->stride & 0x07);
+        handle->dnad = cfg->stride & 0x07;
+
+        if (cfg->space != SCU_DMA_SPACE_BUS_A) {
+                handle->dnad |= 0x00000100;
+        }
 
         handle->dnmd |= cfg->update & 0x00010100;
 }
@@ -201,6 +205,28 @@ scu_dma_config_set(scu_dma_level_t level, scu_dma_start_factor_t start_factor,
         if (start_factor != SCU_DMA_START_FACTOR_ENABLE) {
                 *reg_dxen = 0x00000100;
         }
+}
+
+void
+scu_dma_transfer(scu_dma_level_t level, void *dst, void *src, size_t len)
+{
+        const scu_dma_handle_t dma_handle = {
+                .dnr = CPU_CACHE_THROUGH | (uint32_t)src,
+                .dnw = (uint32_t)dst,
+                .dnc = len,
+                .dnad = 0x00000101,
+                .dnmd = 0x00010100
+        };
+
+        scu_dma_config_set(level, SCU_DMA_START_FACTOR_ENABLE, &dma_handle, NULL);
+        scu_dma_level_end_set(level, NULL, NULL);
+        scu_dma_level_fast_start(level);
+}
+
+void
+scu_dma_transfer_wait(scu_dma_level_t level)
+{
+        scu_dma_level_wait(level);
 }
 
 void

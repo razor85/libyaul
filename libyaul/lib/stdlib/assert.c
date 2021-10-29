@@ -37,10 +37,7 @@ _assert(const char * restrict file, const char * restrict line,
 
                 vdp2_tvmd_vblank_in_next_wait(1);
 
-                cpu_intc_mask_set(14);
                 dbgio_dev_font_load();
-                dbgio_dev_font_load_wait();
-                cpu_intc_mask_set(15);
 
                 dbgio_puts("[H[2J");
         }
@@ -71,8 +68,11 @@ _assert(const char * restrict file, const char * restrict line,
 
         vdp2_tvmd_vblank_in_next_wait(1);
         dbgio_flush();
-        vdp2_sync_commit();
-        vdp2_sync_commit_wait();
+
+        /* Use the internal calls to commit VDP2 to avoid dealing with VDP2 sync
+         * state */
+        _internal_vdp2_commit(0);
+        _internal_vdp2_commit_wait(0);
 
         abort();
 }

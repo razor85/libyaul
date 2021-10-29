@@ -119,18 +119,15 @@ _ihr_exception_show(const cpu_registers_t * restrict regs, const char * restrict
 
         vdp2_tvmd_vblank_in_next_wait(1);
 
-        cpu_intc_mask_set(14);
         dbgio_dev_font_load();
-        dbgio_dev_font_load_wait();
-        cpu_intc_mask_set(15);
 
         dbgio_puts("[H[2J");
         dbgio_puts(buffer);
 
         vdp2_tvmd_vblank_in_next_wait(1);
         dbgio_flush();
-        vdp2_sync_commit();
-        vdp2_sync_commit_wait();
+        _internal_vdp2_commit(0);
+        _internal_vdp2_commit_wait(0);
 }
 
 static void __noreturn __used
@@ -174,7 +171,7 @@ static const char *
 _exception_message_format(const cpu_registers_t * restrict regs,
     const char *restrict exception_name)
 {
-        static char buffer[1024];
+        static char buffer[512];
 
         (void)sprintf(buffer,
             "[H[2J[1;44mException occurred: %s[m\n\n"
