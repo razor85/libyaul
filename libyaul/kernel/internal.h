@@ -24,15 +24,11 @@
 
 #include <mm/tlsf.h>
 
-#define TLSF_POOL_PRIVATE       (0)
-#define TLSF_POOL_USER          (1)
-#define TLSF_POOL_COUNT         (2)
-
 struct state {
         uint8_t which;
 
-        /* Both master and slave contain their own pools */
-        tlsf_t *tlsf_pools;
+        /* Both master and slave contain their own set of handles */
+        tlsf_t *tlsf_handles;
 };
 
 static inline struct state * __always_inline

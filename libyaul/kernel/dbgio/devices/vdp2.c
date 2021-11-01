@@ -38,17 +38,15 @@
 /* CPU-DMAC channel used for _flush() and _buffer_clear() */
 #define DEV_DMAC_CHANNEL 0
 
-struct dev_font_state;
-
 struct dev_state {
         uint8_t state;
 
-        struct dev_font_state *font_state;
+        dbgio_vdp2_t params;
 
         /* Base CPD VRAM address */
-        uint32_t cp_table;
+        vdp2_vram_t cp_table;
         /* Base palette CRAM address */
-        uint32_t color_palette;
+        vdp2_cram_t color_palette;
 
         /* Base page VRAM address */
         uint32_t page_base;
@@ -58,18 +56,15 @@ struct dev_state {
         uint16_t page_width;
         uint16_t page_height;
 
-        uint8_t cram_mode;
+        vdp2_cram_mode_t cram_mode;
 
         /* PND value */
         uint16_t pnd_value;
 
         /* PND value for clearing a page */
         uint16_t pnd_value_clear;
-};
 
-struct dev_font_state {
-        uint8_t *cpd_buffer;
-        color_rgb1555_t *pal_buffer;
+        int16_vec2_t tv_resolution;
 };
 
 /* Restrictions:
@@ -113,9 +108,6 @@ static const dbgio_vdp2_t _default_params = {
         .cram_index    = 0
 };
 
-/* Parameters set by the user */
-static dbgio_vdp2_t _params;
-
 /* Device state for both async and direct VDP2 devices */
 static struct dev_state *_dev_state;
 
@@ -136,8 +128,7 @@ static const cons_ops_t _cons_ops = {
 static inline void __always_inline
 _pnd_write(int16_t col, int16_t row, uint16_t value)
 {
-        int16_t offset;
-        offset = col + (row * _dev_state->page_width);
+        const uint32_t offset = col + (row * _dev_state->page_width);
 
         _dev_state->page_pnd[offset] = value;
 }
@@ -151,7 +142,7 @@ _pnd_clear(int16_t col, int16_t row)
 static void
 _pnd_values_update(bool force)
 {
-        const uint8_t cram_mode = vdp2_cram_mode_get();
+        const vdp2_cram_mode_t cram_mode = vdp2_cram_mode_get();
 
         if (!force && (_dev_state->cram_mode != cram_mode)) {
                 return;
@@ -194,15 +185,15 @@ static void
 _buffer_clear(void)
 {
         static cpu_dmac_cfg_t dmac_cfg = {
-                .channel = DEV_DMAC_CHANNEL,
+                .channel  = DEV_DMAC_CHANNEL,
                 .src_mode = CPU_DMAC_SOURCE_FIXED,
-                .src = 0x00000000,
-                .dst = 0x00000000,
+                .src      = 0x00000000,
+                .dst      = 0x00000000,
                 .dst_mode = CPU_DMAC_DESTINATION_INCREMENT,
-                .len = 0x00000000,
-                .stride = CPU_DMAC_STRIDE_2_BYTES,
+                .len      = 0x00000000,
+                .stride   = CPU_DMAC_STRIDE_2_BYTES,
                 .bus_mode = CPU_DMAC_BUS_MODE_CYCLE_STEAL,
-                .ihr = NULL
+                .ihr      = NULL
         };
 
         /* Don't try to clear the buffer again if it's already been cleared */
@@ -216,6 +207,8 @@ _buffer_clear(void)
         dmac_cfg.src = _dev_state->pnd_value_clear;
         dmac_cfg.len = _dev_state->page_size;
 
+        /* Force enable DMAC, in case cpu_dmac_stop() is called */
+        cpu_dmac_enable();
         cpu_dmac_channel_wait(DEV_DMAC_CHANNEL);
         cpu_dmac_channel_config_set(&dmac_cfg);
         cpu_dmac_channel_start(DEV_DMAC_CHANNEL);
@@ -230,10 +223,8 @@ _buffer_area_clear(int16_t col_start, int16_t col_end, int16_t row_start,
 {
         _dev_state->state |= STATE_BUFFER_DIRTY;
 
-        int16_t row;
-        for (row = row_start; row < row_end; row++) {
-                int16_t col;
-                for (col = col_start; col < col_end; col++) {
+        for (int16_t row = row_start; row < row_end; row++) {
+                for (int16_t col = col_start; col < col_end; col++) {
                         _pnd_clear(col, row);
                 }
         }
@@ -244,8 +235,7 @@ _buffer_line_clear(int16_t row)
 {
         _dev_state->state |= STATE_BUFFER_DIRTY;
 
-        int16_t col;
-        for (col = 0; col < _dev_state->page_width; col++) {
+        for (int16_t col = 0; col < _dev_state->page_width; col++) {
                 _pnd_clear(col, row);
         }
 }
@@ -255,8 +245,7 @@ _buffer_line_partial_clear(int16_t col_start, int16_t col_end, int16_t row)
 {
         _dev_state->state |= STATE_BUFFER_DIRTY;
 
-        int16_t col;
-        for (col = col_start; col < col_end; col++) {
+        for (int16_t col = col_start; col < col_end; col++) {
                 _pnd_clear(col, row);
         }
 }
@@ -300,11 +289,8 @@ _font_1bpp_4bpp_decompress(uint8_t *dec_cpd, const uint8_t *cmp_cpd,
                 fg & 0x0F
         };
 
-        uint8_t cpd;
-
-        uint32_t i;
-        uint32_t j;
-        for (i = 0, j = 0; i < FONT_1BPP_CPD_SIZE; i++) {
+        for (uint32_t i = 0, j = 0; i < FONT_1BPP_CPD_SIZE; i++) {
+                uint8_t cpd;
                 cpd = cmp_cpd[i];
 
                 dec_cpd[j + 0] = _1bpp_4bpp_convert(cpd, fgbg);
@@ -322,28 +308,13 @@ _font_1bpp_4bpp_decompress(uint8_t *dec_cpd, const uint8_t *cmp_cpd,
 static void
 _dev_state_init(const dbgio_vdp2_t *params)
 {
-        assert(params != NULL);
+        _dev_state = _internal_malloc(sizeof(struct dev_state));
+        assert(_dev_state != NULL);
 
-        if (_dev_state == NULL) {
-                _dev_state = _internal_malloc(sizeof(struct dev_state));
-                assert(_dev_state != NULL);
+        (void)memset(_dev_state, 0x00, sizeof(struct dev_state));
 
-                (void)memset(_dev_state, 0x00, sizeof(struct dev_state));
-
-                _dev_state->font_state =
-                    _internal_malloc(sizeof(struct dev_font_state));
-                assert(_dev_state->font_state != NULL);
-
-                (void)memset(_dev_state->font_state, 0x00,
-                    sizeof(struct dev_font_state));
-
-                _dev_state->state = STATE_IDLE;
-        }
-
-        /* Return if we're already initialized */
-        if ((_dev_state->state & STATE_INITIALIZED) == STATE_INITIALIZED) {
-                return;
-        }
+        _dev_state->state = STATE_IDLE;
+        _dev_state->params = *params;
 
         _dev_state->page_size = VDP2_SCRN_CALCULATE_PAGE_SIZE_M(1 * 1, 1);
         _dev_state->page_width = VDP2_SCRN_CALCULATE_PAGE_WIDTH_M(1 * 1);
@@ -361,23 +332,10 @@ _dev_state_init(const dbgio_vdp2_t *params)
 
         _pnd_values_update(/* force = */ true);
 
-        if (_dev_state->page_pnd == NULL) {
-                _dev_state->page_pnd = _internal_malloc(_dev_state->page_size);
-                assert(_dev_state->page_pnd != NULL);
-        }
+        _dev_state->page_pnd = _internal_malloc(_dev_state->page_size);
+        assert(_dev_state->page_pnd != NULL);
 
-        struct dev_font_state * const font_state = _dev_state->font_state;
-
-        if (font_state->cpd_buffer == NULL) {
-                font_state->cpd_buffer = _internal_malloc(FONT_4BPP_CPD_SIZE);
-                assert(font_state->cpd_buffer != NULL);
-        }
-
-        if (font_state->pal_buffer == NULL) {
-                font_state->pal_buffer =
-                    _internal_malloc(FONT_4BPP_COLOR_COUNT * sizeof(color_rgb1555_t));
-                assert(font_state->pal_buffer != NULL);
-        }
+        _dev_state->tv_resolution = _state_vdp2()->tv.resolution;
 }
 
 static inline void __always_inline
@@ -410,13 +368,15 @@ _scroll_screen_reset(void)
         /* Force reset */
         _pnd_values_update(/* force = */ false);
 
-        vdp2_scrn_priority_set(_params.scroll_screen, 7);
-        vdp2_scrn_scroll_x_set(_params.scroll_screen, FIX16(0.0f));
-        vdp2_scrn_scroll_y_set(_params.scroll_screen, FIX16(0.0f));
-        vdp2_scrn_display_set(_params.scroll_screen, /* transparent = */ true);
+        const dbgio_vdp2_t * const params = &_dev_state->params;
 
-        vdp2_vram_cycp_bank_set(_params.cpd_bank, &_params.cpd_cycp);
-        vdp2_vram_cycp_bank_set(_params.pnd_bank, &_params.pnd_cycp);
+        vdp2_scrn_priority_set(params->scroll_screen, 7);
+        vdp2_scrn_scroll_x_set(params->scroll_screen, FIX16(0.0f));
+        vdp2_scrn_scroll_y_set(params->scroll_screen, FIX16(0.0f));
+        vdp2_scrn_display_set(params->scroll_screen, /* transparent = */ true);
+
+        vdp2_vram_cycp_bank_set(params->cpd_bank, &params->cpd_cycp);
+        vdp2_vram_cycp_bank_set(params->pnd_bank, &params->pnd_cycp);
 }
 
 static inline void __always_inline
@@ -459,28 +419,12 @@ _shared_init(const dbgio_vdp2_t *params)
 
         _dev_state_init(params);
 
-        /* Return if we're already initialized */
-        if ((_dev_state->state & STATE_INITIALIZED) == STATE_INITIALIZED) {
-                return;
-        }
+        const uint16_t cols = _dev_state->tv_resolution.x / FONT_CHAR_WIDTH;
+        const uint16_t rows = _dev_state->tv_resolution.y / FONT_CHAR_HEIGHT;
 
-        cons_init(&_cons_ops, CONS_COLS_MIN, CONS_ROWS_MIN);
-
-        /* Copy user's set device parameters */
-        (void)memcpy(&_params, params, sizeof(dbgio_vdp2_t));
+        cons_init(&_cons_ops, cols, rows);
 
         _scroll_screen_init(params);
-
-        struct dev_font_state * const font_state =
-            _dev_state->font_state;
-
-        _font_1bpp_4bpp_decompress(font_state->cpd_buffer,
-            params->font_cpd,
-            params->font_fg,
-            params->font_bg);
-
-        (void)memcpy(font_state->pal_buffer, params->font_pal,
-            FONT_4BPP_COLOR_COUNT * sizeof(color_rgb1555_t));
 }
 
 static void
@@ -490,15 +434,11 @@ _shared_deinit(void)
                 return;
         }
 
-        if ((_dev_state->state & STATE_INITIALIZED) == 0x00) {
+        if ((_dev_state->state & STATE_INITIALIZED) != STATE_INITIALIZED) {
                 return;
         }
 
         _internal_free(_dev_state->page_pnd);
-
-        _internal_free(_dev_state->font_state->cpd_buffer);
-        _internal_free(_dev_state->font_state->pal_buffer);
-        _internal_free(_dev_state->font_state);
 
         _internal_free(_dev_state);
 
@@ -519,11 +459,26 @@ _shared_puts(const char *buffer)
         /* It's the best we can do for now. If the current buffer is marked for
          * flushing, we have to silently drop any calls to write to the
          * buffer */
-        uint8_t state_mask;
-        state_mask = STATE_BUFFER_FLUSHING | STATE_BUFFER_FORCE_FLUSHING;
+        const uint8_t state_mask =
+            STATE_BUFFER_FLUSHING | STATE_BUFFER_FORCE_FLUSHING;
 
         if ((_dev_state->state & state_mask) == STATE_BUFFER_FLUSHING) {
                 return;
+        }
+
+        int16_vec2_t * const tv_resolution =
+            &_dev_state->tv_resolution;
+        const int16_vec2_t * const vdp2_tv_resolution =
+            &_state_vdp2()->tv.resolution;
+
+        if ((tv_resolution->x != vdp2_tv_resolution->x) ||
+            (tv_resolution->y != vdp2_tv_resolution->y)) {
+                *tv_resolution = *vdp2_tv_resolution;
+
+                const uint16_t cols = tv_resolution->x / FONT_CHAR_WIDTH;
+                const uint16_t rows = tv_resolution->y / FONT_CHAR_HEIGHT;
+
+                cons_resize(cols, rows);
         }
 
         cons_buffer(buffer);
@@ -540,18 +495,16 @@ _shared_font_load(void)
                 return;
         }
 
-        /* Due to the 1BPP font being decompressed in cached H-WRAM, we need to
-         * flush the cache as the DMA transfer accesses the uncached mirror
-         * address to the decompressed 4BPP font, which could result in fetching
-         * stale values not yet written back to H-WRAM */
-        cpu_cache_purge();
+        const dbgio_vdp2_t * const params = &_dev_state->params;
 
-        struct dev_font_state * const font_state = _dev_state->font_state;
+        _font_1bpp_4bpp_decompress((void *)_dev_state->cp_table,
+            params->font_cpd,
+            params->font_fg,
+            params->font_bg);
 
-        scu_dma_transfer(0, (void *)_dev_state->cp_table, font_state->cpd_buffer, FONT_4BPP_CPD_SIZE);
-        scu_dma_transfer(1, (void *)_dev_state->color_palette, font_state->pal_buffer, FONT_4BPP_COLOR_COUNT * sizeof(color_rgb1555_t));
-        scu_dma_transfer_wait(0);
-        scu_dma_transfer_wait(1);
+        (void)memcpy((void *)_dev_state->color_palette,
+            params->font_pal,
+            FONT_4BPP_COLOR_COUNT * sizeof(color_rgb1555_t));
 }
 
 #include "vdp2.inc"
