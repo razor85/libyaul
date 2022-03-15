@@ -41,12 +41,20 @@ __BEGIN_DECLS
 /// Address for when accessing cache data directly.
 #define CPU_CACHE_WAY_3_ADDR    0xC0000C00UL
 
+/// @brief The size in bytes of a cache way.
+#define CPU_CACHE_WAY_SIZE      (CPU_CACHE_WAY_1_ADDR - CPU_CACHE_WAY_0_ADDR)
+
 /// @brief The size in bytes of the 2KiB RAM.
 /// @see cpu_cache_way_mode_set
 #define CPU_CACHE_2_WAY_SIZE    (CPU_CACHE_WAY_2_ADDR - CPU_CACHE_WAY_0_ADDR)
 
 /// @brief The size of a cache line in bytes.
 #define CPU_CACHE_LINE_SIZE     16UL
+
+/// @brief Given the tag bits from @ref cpu_cache_data_line_t, convert to a
+/// physical address.
+/// @see cpu_cache_data_line_t
+#define CPU_CACHE_TAG_ADDRESS(x) ((uint32_t)(x) >> 10)
 
 /// @brief Cache mode.
 typedef enum cpu_cache_mode {
@@ -63,6 +71,27 @@ typedef enum cpu_cache_type {
         /// Data cache type.
         CPU_CACHE_TYPE_D = 0x04
 } cpu_cache_type_t;
+
+/// @brief Cache data line representing the data read from the cache.
+/// @see cpu_cache_data_way_t
+/// @see cpu_cache_data_way_read
+typedef union cpu_cache_data_line {
+        unsigned int      :3;
+        /// @brief Tag bits.
+        unsigned int   tag:19;
+        /// @brief LRU bits.
+        unsigned int   lru:6;
+        unsigned int      :1;
+        /// @brief Validity bit.
+        unsigned int valid:1;
+        unsigned int      :2;
+} __packed cpu_cache_data_line_t;
+
+/// @brief Cache data way.
+/// @see cpu_cache_data_way_read
+typedef struct cpu_cache_data_way {
+        cpu_cache_data_line_t data[CPU_CACHE_WAY_SIZE / CPU_CACHE_LINE_SIZE];
+} __aligned(4) cpu_cache_data_way_t;
 
 /// @brief Enable cache.
 static inline void __always_inline
@@ -160,6 +189,16 @@ extern void cpu_cache_area_purge(void *address, uint32_t len) __section(".uncach
 /// @details All cache entries and all valid bits and LRU bits of all ways are
 /// initialized to `0`. Calling this function will not pollute the cache.
 extern void cpu_cache_purge(void) __no_reorder __section(".uncached");
+
+/// @brief Walk one of the 4 ways the CPU cache and dump cache state bits.
+///
+/// @details It's imperative that the function that calls @ref
+/// cpu_cache_data_way_read must be uncached so that it doesn't taint the cache
+/// itself.
+///
+/// @param     way       The cache way to read from.
+/// @param[in] cache_way The cache way buffer to write to.
+extern void cpu_cache_data_way_read(uint8_t way, cpu_cache_data_way_t *data_way) __section(".uncached");
 
 /// @}
 

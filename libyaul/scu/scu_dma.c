@@ -40,7 +40,7 @@ static void _scu_dma_level1_handler(void);
 static void _scu_dma_level2_handler(void);
 
 void
-_internal_scu_dma_init(void)
+__scu_dma_init(void)
 {
         scu_dma_stop();
 
@@ -208,7 +208,7 @@ scu_dma_config_set(scu_dma_level_t level, scu_dma_start_factor_t start_factor,
 }
 
 void
-scu_dma_transfer(scu_dma_level_t level, void *dst, void *src, size_t len)
+scu_dma_transfer(scu_dma_level_t level, void *dst, const void *src, size_t len)
 {
         const scu_dma_handle_t dma_handle = {
                 .dnr = CPU_CACHE_THROUGH | (uint32_t)src,

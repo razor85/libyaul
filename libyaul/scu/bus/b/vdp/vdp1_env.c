@@ -41,7 +41,7 @@ static inline void __always_inline _env_current_update(const vdp1_env_t *env);
 static void _env_default_erase_update(void);
 
 void
-_internal_vdp1_env_init(void)
+__vdp1_env_init(void)
 {
         _state_vdp1()->current_env = &_current_env;
 
@@ -67,6 +67,12 @@ vdp1_env_default_set(void)
         _env_default_erase_update();
 
         vdp1_env_set(&_default_env);
+}
+
+const vdp1_env_t *
+vdp1_env_get(void)
+{
+        return &_current_env;
 }
 
 void
@@ -157,8 +163,9 @@ vdp1_env_preamble_populate(vdp1_cmdt_t *cmdts,
         const int16_vec2_t system_clip_coords =
             _state_vdp2()->tv.resolution;
 
+        int16_vec2_t center_local_coords;
+
         if (local_coords == NULL) {
-                int16_vec2_t center_local_coords;
                 local_coords = &center_local_coords;
 
                 center_local_coords.x = _state_vdp2()->tv.resolution.x / 2;

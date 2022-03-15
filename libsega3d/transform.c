@@ -8,13 +8,12 @@
 #include <cpu/divu.h>
 #include <vdp.h>
 
-#include <dbgio.h>
+#include <dbgio/dbgio.h>
 
 #include "sega3d-internal.h"
 
-extern void _internal_sort_clear(void);
-extern void _internal_sort_add(void *packet, int32_t pz);
-extern void _internal_sort_iterate(iterate_fn fn);
+extern void __sort_add(void *packet, int32_t pz);
+extern void __sort_iterate(sort_iterate_fn_t fn);
 
 static bool _object_aabb_cull_test(const transform_t * const trans) __unused;
 static bool _object_sphere_cull_test(const transform_t * const trans);
@@ -27,6 +26,8 @@ static void _sort_iterate(const sort_single_t *single);
 static void _vertex_pool_clipping(const transform_t * const trans);
 static void _vertex_pool_transform(const transform_t * const trans, const POINT * const points);
 static void _z_calculate(transform_t * const trans);
+
+static void _put_set_handler(void *work);
 
 static inline FIXED __always_inline __unused
 _point_component_transform(const fix16_vec3_t *p, const FIXED *matrix)
@@ -93,11 +94,22 @@ _normal_rotate(const fix16_vec3_t *p, const FIXED *matrix)
 static vdp1_cmdt_t _cmdt_end;
 
 void
-_internal_transform_init(void)
+__transform_init(void)
 {
         vdp1_cmdt_end_set(&_cmdt_end);
 
-        sega3d_matrix_identity(_internal_state->clip_camera);
+        sega3d_matrix_identity(__state->clip_camera);
+
+        sega3d_results_t * const internal_results = __state->results;
+
+        perf_counter_init(&internal_results->perf_sort);
+        perf_counter_init(&internal_results->perf_dma);
+        perf_counter_init(&internal_results->perf_aabb_culling);
+        perf_counter_init(&internal_results->perf_transform);
+        perf_counter_init(&internal_results->perf_clipping);
+        perf_counter_init(&internal_results->perf_polygon_process);
+
+        vdp1_sync_put_set(_put_set_handler, &internal_results->perf_dma);
 }
 
 void
@@ -105,27 +117,25 @@ sega3d_start(vdp1_cmdt_orderlist_t *orderlist, uint16_t orderlist_offset, vdp1_c
 {
         assert(orderlist != NULL);
 
-        _internal_sort_clear();
-
-        transform_t * const trans = _internal_state->transform;
+        transform_t * const trans = __state->transform;
 
         trans->orderlist = orderlist;
         trans->current_orderlist = &orderlist[orderlist_offset];
         trans->current_cmdt = cmdts;
 
-        sega3d_results_t * const results = _internal_state->results;
+        sega3d_results_t * const internal_results = __state->results;
 
-        results->object_count = 0;
-        results->polygon_count = 0;
+        internal_results->object_count = 0;
+        internal_results->polygon_count = 0;
 
         const FIXED * const camera_matrix =
-            (const FIXED *)_internal_state->clip_camera;
+            (const FIXED *)__state->clip_camera;
 
-        clip_planes_t * const clip_planes = _internal_state->clip_planes;
+        clip_planes_t * const clip_planes = __state->clip_planes;
         fix16_plane_t * const out_clip_planes =
-            (fix16_plane_t *)_internal_state->clip_planes;
+            (fix16_plane_t *)__state->clip_planes;
         const fix16_vec3_t * const clip_normals =
-            (const fix16_vec3_t *)&_internal_state->clip_planes->near_normal;
+            (const fix16_vec3_t *)&__state->clip_planes->near_normal;
 
         for (uint32_t i = 0; i < 6; i++) {
                 fix16_plane_t * const clip_plane = &out_clip_planes[i];
@@ -158,9 +168,13 @@ sega3d_start(vdp1_cmdt_orderlist_t *orderlist, uint16_t orderlist_offset, vdp1_c
 void
 sega3d_finish(sega3d_results_t *results)
 {
-        _internal_sort_iterate(_sort_iterate);
+        sega3d_results_t * const internal_results = __state->results;
 
-        transform_t * const trans = _internal_state->transform;
+        perf_counter_start(&internal_results->perf_sort);
+        __sort_iterate(_sort_iterate);
+        perf_counter_end(&internal_results->perf_sort);
+
+        transform_t * const trans = __state->transform;
 
         /* Fetch the last command table pointer before setting the indirect mode
          * transfer end bit */
@@ -168,13 +182,20 @@ sega3d_finish(sega3d_results_t *results)
 
         vdp1_cmdt_orderlist_end(trans->current_orderlist);
 
+        perf_counter_start(&internal_results->perf_dma);
         vdp1_sync_cmdt_orderlist_put(trans->orderlist);
+        /* Performance counter end is inside a callback */
 
         if (results != NULL) {
-                sega3d_results_t * const internal_results = _internal_state->results;
-
                 results->object_count = internal_results->object_count;
                 results->polygon_count = trans->current_orderlist - trans->orderlist;
+
+                results->perf_sort = internal_results->perf_sort;
+                results->perf_dma = internal_results->perf_dma;
+                results->perf_aabb_culling = internal_results->perf_aabb_culling;
+                results->perf_transform = internal_results->perf_transform;
+                results->perf_clipping = internal_results->perf_clipping;
+                results->perf_polygon_process = internal_results->perf_polygon_process;
         }
 }
 
@@ -193,13 +214,16 @@ sega3d_object_transform(const sega3d_object_t *object, uint16_t xpdata_index)
                 return;
         }
 
-        transform_t * const trans = _internal_state->transform;
+        sega3d_results_t * const internal_results = __state->results;
+
+        transform_t * const trans = __state->transform;
 
         trans->object = object;
         trans->xpdata = xpdata;
         trans->vertex_count = vertex_count;
         trans->polygon_count = polygon_count;
 
+        perf_counter_start(&internal_results->perf_aabb_culling);
         if ((object->flags & SEGA3D_OBJECT_FLAGS_CULL_AABB) != SEGA3D_OBJECT_FLAGS_NONE) {
                 if ((_object_aabb_cull_test(trans))) {
                         return;
@@ -209,15 +233,25 @@ sega3d_object_transform(const sega3d_object_t *object, uint16_t xpdata_index)
                         return;
                 }
         }
+        perf_counter_end(&internal_results->perf_aabb_culling);
 
         sega3d_matrix_push(SEGA3D_MATRIX_TYPE_PUSH); {
                 _camera_world_transform();
+
+                perf_counter_start(&internal_results->perf_transform);
                 _vertex_pool_transform(trans, xpdata->pntbl);
+                perf_counter_end(&internal_results->perf_transform);
+
+                perf_counter_start(&internal_results->perf_clipping);
                 _vertex_pool_clipping(trans);
+                perf_counter_end(&internal_results->perf_clipping);
+
+                perf_counter_start(&internal_results->perf_polygon_process);
                 _polygon_process(trans, xpdata->pltbl);
+                perf_counter_end(&internal_results->perf_polygon_process);
         } sega3d_matrix_pop();
 
-        sega3d_results_t * const results = _internal_state->results;
+        sega3d_results_t * const results = __state->results;
 
         results->object_count++;
 }
@@ -227,7 +261,7 @@ _camera_world_transform(void)
 {
         FIXED * const top_matrix = (FIXED *)sega3d_matrix_top();
         const FIXED * const camera_matrix =
-            (const FIXED *)_internal_state->clip_camera;
+            (const FIXED *)__state->clip_camera;
 
         top_matrix[M03] += -camera_matrix[M03];
         top_matrix[M13] += -camera_matrix[M13];
@@ -241,13 +275,13 @@ _vertex_pool_transform(const transform_t * const trans, const POINT * const poin
 #define OFFSET_CPU_DVDNTH       (0x10 / 4)
 #define OFFSET_CPU_DVDNTL       (0x14 / 4)
 
-        const sega3d_info_t * const info = _internal_state->info;
+        const sega3d_info_t * const info = __state->info;
 
         const FIXED *current_point = (const FIXED *)points;
         const FIXED * const last_point = (const FIXED * const)&points[trans->vertex_count];
 
         transform_proj_t *trans_proj;
-        trans_proj = &_internal_state->transform_proj_pool[0];
+        trans_proj = &__state->transform_proj_pool[0];
 
         const FIXED view_distance = info->view_distance;
         const FIXED view_distance_16 = view_distance << 16;
@@ -336,7 +370,7 @@ _vertex_pool_transform(const transform_t * const trans, const POINT * const poin
 static void
 _sort_iterate(const sort_single_t *single)
 {
-        transform_t * const trans = _internal_state->transform;
+        transform_t * const trans = __state->transform;
 
         /* No need to clear the end bit, as setting the "source" clobbers the
          * bit */
@@ -348,7 +382,7 @@ static void
 _vertex_pool_clipping(const transform_t * const trans)
 {
         transform_proj_t *trans_proj;
-        trans_proj = &_internal_state->transform_proj_pool[0];
+        trans_proj = &__state->transform_proj_pool[0];
 
         const int16_t sw_2 = trans->cached_sw_2;
         const int16_t sw_n2 = -trans->cached_sw_2;
@@ -378,7 +412,7 @@ static void
 _polygon_process(transform_t * const trans, POLYGON const *polygons)
 {
         transform_proj_t * const transform_proj_pool =
-            &_internal_state->transform_proj_pool[0];
+            &__state->transform_proj_pool[0];
 
         const sega3d_object_t * const object = trans->object;
         const uint16_t polygon_count = trans->polygon_count;
@@ -410,7 +444,7 @@ _polygon_process(transform_t * const trans, POLYGON const *polygons)
 
                 _cmdt_prepare(trans);
 
-                _internal_sort_add(trans->current_cmdt, fix16_int32_to(trans->z_value));
+                __sort_add(trans->current_cmdt, fix16_int32_to(trans->z_value));
 
                 trans->current_cmdt++;
         }
@@ -422,7 +456,7 @@ _z_calculate(transform_t * const trans)
         const XPDATA * const xpdata = trans->xpdata;
         const ATTR * const attr = &xpdata->attbl[trans->index];
 
-        const uint32_t sort = attr->sort & 0x03; 
+        const uint32_t sort = attr->sort & 0x03;
 
         if (sort == SORT_CEN) {
                 const FIXED z_avg = trans->polygon[0]->point_z +
@@ -433,7 +467,7 @@ _z_calculate(transform_t * const trans)
                 /* Divide by 4 to get the average (bit shift) */
                 trans->z_value = z_avg >> 2;
         } else if (sort == SORT_MIN) {
-                trans->z_value = trans->polygon[0]->point_z; 
+                trans->z_value = trans->polygon[0]->point_z;
 
                 trans->z_value = (trans->polygon[1]->point_z < trans->z_value)
                     ? trans->polygon[1]->point_z
@@ -469,8 +503,7 @@ _cmdt_prepare(const transform_t * const trans)
 
         vdp1_cmdt_t * const cmdt = trans->current_cmdt;
 
-        const ATTR *attr;
-        attr = &xpdata->attbl[trans->index];
+        const ATTR * const attr = &xpdata->attbl[trans->index];
 
         cmdt->cmd_ctrl = attr->dir; /* We care about (Dir) and (Comm) bits */
         cmdt->cmd_link = 0x0000;
@@ -486,21 +519,21 @@ _cmdt_prepare(const transform_t * const trans)
                                                     trans->polygon[1]->clip_flags |
                                                     trans->polygon[2]->clip_flags |
                                                     trans->polygon[3]->clip_flags);
-        
+
                 if (or_clip_flags == CLIP_FLAGS_NONE) {
                         /* Since no clip flags are set, disable pre-clipping.
                          * This should help with performance */
                         cmdt->cmd_pmod |= VDP1_CMDT_PMOD_PRE_CLIPPING_DISABLE;
                 }
-        
+
                 /* Even when there is not texture list, there is the default
                  * texture that zeroes out CMDSRCA and CMDSIZE */
-                const TEXTURE * const textures = _internal_state->tlist->list;
+                const TEXTURE * const textures = __state->tlist->list;
 
                 /* When there is no palette list, simply use the value directly */
-                const PALETTE * const palettes = _internal_state->plist->list;
+                const PALETTE * const palettes = __state->plist->list;
 
-                if ((attr->dir == FUNC_Texture) && ((attr->sort & UseTexture) == UseTexture)) {
+                if ((attr->sort & UseTexture) == UseTexture) {
                         const TEXTURE * const texture = &textures[attr->texno];
 
                         if (palettes != NULL) {
@@ -515,6 +548,8 @@ _cmdt_prepare(const transform_t * const trans)
                         cmdt->cmd_size = texture->HVsize;
 
                         cmdt->cmd_pmod |= VDP1_CMDT_PMOD_HSS_ENABLE;
+                } else {
+                        cmdt->cmd_colr = attr->colno;
                 }
         } else {
                 cmdt->cmd_ctrl = 0x0004 | ((object->flags & debug_flags) >> 1);
@@ -543,7 +578,7 @@ _cmdt_prepare(const transform_t * const trans)
 
         cmdt->cmd_grda = attr->gstb;
 
-        if ((_internal_state->flags & FLAGS_FOG_ENABLED) != FLAGS_NONE) {
+        if ((__state->flags & FLAGS_FOG_ENABLED) != FLAGS_NONE) {
                 if ((object->flags & SEGA3D_OBJECT_FLAGS_FOG_EXCLUDE) == SEGA3D_OBJECT_FLAGS_NONE) {
                         _fog_calculate(trans);
                 }
@@ -555,31 +590,31 @@ _fog_calculate(const transform_t * const trans)
 {
         vdp1_cmdt_t * const cmdt = trans->current_cmdt;
 
-        if (trans->z_value < _internal_state->fog->start_z) {
-                cmdt->cmd_colr = _internal_state->fog->near_ambient_color.raw;
+        if (trans->z_value < __state->fog->start_z) {
+                cmdt->cmd_colr = __state->fog->near_ambient_color.raw;
 
                 return;
         }
 
-        if (trans->z_value >= _internal_state->fog->end_z) {
-                cmdt->cmd_colr = _internal_state->fog->far_ambient_color.raw;
+        if (trans->z_value >= __state->fog->end_z) {
+                cmdt->cmd_colr = __state->fog->far_ambient_color.raw;
 
                 return;
         }
 
         int32_t int_z_depth;
-        int_z_depth = fix16_int16_muls(trans->z_value, _internal_state->fog->step);
+        int_z_depth = fix16_int16_muls(trans->z_value, __state->fog->step);
 
         if (int_z_depth < 0) {
                 int_z_depth = 0;
         }
-        if (int_z_depth >= _internal_state->fog->depth_count) {
-                int_z_depth = _internal_state->fog->depth_count - 1;
+        if (int_z_depth >= __state->fog->depth_count) {
+                int_z_depth = __state->fog->depth_count - 1;
         }
 
-        const int32_t depth_index __unused = _internal_state->fog->depth_z[int_z_depth];
+        const int32_t depth_index __unused = __state->fog->depth_z[int_z_depth];
 
-        cmdt->cmd_colr = _internal_state->fog->depth_colors[depth_index].raw;
+        cmdt->cmd_colr = __state->fog->depth_colors[depth_index].raw;
 }
 
 static bool
@@ -591,13 +626,13 @@ _screen_cull_test(const transform_t * const trans)
         const int16_vec2_t * const p3 = &trans->polygon[3]->screen;
 
         const int32_vec2_t u1 = {
-                .x = p1->x - p0->x,
-                .y = p1->y - p0->y
+                .x = p3->x - p0->x,
+                .y = p3->y - p0->y
         };
 
         const int32_vec2_t v1 = {
-                .x = p3->x - p0->x,
-                .y = p3->y - p0->y
+                .x = p1->x - p0->x,
+                .y = p1->y - p0->y
         };
 
         /* Ideally, we only need to do a cross product on one winding order, but
@@ -608,30 +643,30 @@ _screen_cull_test(const transform_t * const trans)
 
         const int32_t z1 = (u1.x * v1.y) - (u1.y * v1.x);
 
-        if (z1 < 0) {
+        if (z1 >= 0) {
                 return false;
         }
 
         const int16_vec2_t u2 = {
-                .x = p3->x - p2->x,
-                .y = p3->y - p2->y
-        };
-
-        const int16_vec2_t v2 = {
                 .x = p1->x - p2->x,
                 .y = p1->y - p2->y
         };
 
+        const int16_vec2_t v2 = {
+                .x = p3->x - p2->x,
+                .y = p3->y - p2->y
+        };
+
         const int16_t z2 = (u2.x * v2.y) - (u2.y * v2.x);
 
-        return (z2 >= 0);
+        return (z2 < 0);
 }
 
 static bool
 _object_sphere_cull_test(const transform_t * const trans)
 {
         const fix16_plane_t * const clip_planes =
-            (fix16_plane_t *)_internal_state->clip_planes;
+            (fix16_plane_t *)__state->clip_planes;
         const sega3d_object_t * const object = trans->object;
         const sega3d_cull_sphere_t * const sphere = object->cull_shape;
 
@@ -668,7 +703,7 @@ static bool
 _object_aabb_cull_test(const transform_t * const trans)
 {
         const fix16_plane_t * const clip_planes =
-            (fix16_plane_t *)_internal_state->clip_planes;
+            (fix16_plane_t *)__state->clip_planes;
         const sega3d_object_t * const object = trans->object;
         const sega3d_cull_aabb_t * const aabb = object->cull_shape;
 
@@ -711,4 +746,12 @@ _object_aabb_cull_test(const transform_t * const trans)
         }
 
         return false;
+}
+
+static void
+_put_set_handler(void *work)
+{
+        perf_counter_t * const perf_counter = work;
+
+        perf_counter_end(perf_counter);
 }

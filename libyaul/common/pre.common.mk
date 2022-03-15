@@ -69,16 +69,36 @@ BUILD_ROOT:= $(patsubst %/,%,$(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
 
 ifeq '$(OS)' "Windows_NT"
 EXE_EXT:= .exe
+
+# In order to avoid the following error under MSYS2 and MinGW-w32:
+#
+# /opt/tool-chains/sh2eb-elf/bin/sh2eb-elf-gcc.exe: error while loading shared
+# libraries: libwinpthread-1.dll: cannot open shared object file: No such file
+# or directory
+#
+# We need to have /mingw/bin in our path. It's unclear exactly why, but
+# libwinpthread-1.dll resides in /mingw64/bin. Copying libwinpthread-1.dll to
+# /opt/tool-chains/sh2eb-elf/bin does not resolve the issue
+PATH:= /mingw64/bin:$(PATH)
 endif
+
+# $1 -> Relative/absolute path to be converted using '@' instead of '/'
+define macro-convert-build-path
+$(SH_BUILD_PATH)/$(subst /,@,$(abspath $1))
+endef
+
+# $1 -> Variable
+# $2 -> Index
+define macro-word-split
+$(word $2,$(subst ;, ,$1))
+endef
 
 # Customizable (must be overwritten in user's Makefile)
 SH_PROGRAM?= unknown-program
 SH_SRCS?=
 SH_SRCS_NO_LINK?=
 SH_LIBRARIES?=
-SH_CUSTOM_SPECS?=
 SH_BUILD_DIR?= build
-ROMDISK_DIRS?=
 IMAGE_DIRECTORY?= cd
 IMAGE_1ST_READ_BIN?= A.BIN
 
@@ -141,10 +161,6 @@ CDB_FILE:= compile_commands.json
 CDB_GCC?= /usr/bin/gcc
 CDB_CPP?= /usr/bin/g++
 
-ROMDISK_FLAGS:= -v -a 16 -V "ROOT"
-
-SUFFIXES:= .c .cc .C .cpp .cxx .sx .o .bin .elf .romdisk .romdisk.o
-
 .PHONY: all clean list-targets
 
 # The targets which .SECONDARY depends on are treated as intermediate files,
@@ -152,7 +168,7 @@ SUFFIXES:= .c .cc .C .cpp .cxx .sx .o .bin .elf .romdisk .romdisk.o
 .SECONDARY: pre-build-iso post-build-iso build
 
 .SUFFIXES:
-.SUFFIXES: $(SUFFIXES)
+.SUFFIXES: .c .cc .C .cpp .cxx .sx .o .bin .elf
 
 .PRECIOUS: %.elf %.c %.o
 

@@ -18,7 +18,7 @@
 #include "usb-cart-internal.h"
 
 void
-_internal_usb_cart_init(void)
+__usb_cart_init(void)
 {
         /* Disabling A-bus refresh adds ~20 KiB/s */
         MEMORY_WRITE(32, SCU(AREF), 0x00000000);
@@ -30,13 +30,9 @@ _internal_usb_cart_init(void)
 void
 usb_cart_long_send(uint32_t w)
 {
-        usb_cart_txe_wait();
         usb_cart_byte_send(w >> 24);
-        usb_cart_txe_wait();
         usb_cart_byte_send(w >> 16);
-        usb_cart_txe_wait();
         usb_cart_byte_send(w >> 8);
-        usb_cart_txe_wait();
         usb_cart_byte_send(w & 0xFF);
 }
 
@@ -46,13 +42,9 @@ usb_cart_long_read(void)
         uint32_t b;
         b = 0;
 
-        usb_cart_rxf_wait();
         b |= (usb_cart_byte_read()) << 24;
-        usb_cart_rxf_wait();
         b |= (usb_cart_byte_read()) << 16;
-        usb_cart_rxf_wait();
         b |= (usb_cart_byte_read()) << 8;
-        usb_cart_rxf_wait();
         b |= (usb_cart_byte_read());
 
         return b;
@@ -61,11 +53,8 @@ usb_cart_long_read(void)
 uint8_t
 usb_cart_byte_xchg(uint8_t c)
 {
-        uint8_t b;
-        usb_cart_rxf_wait();
-        b = usb_cart_byte_read();
+        const uint8_t b = usb_cart_byte_read();
 
-        usb_cart_txe_wait();
         usb_cart_byte_send(c);
 
         return b;

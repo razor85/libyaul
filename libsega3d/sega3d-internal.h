@@ -100,10 +100,10 @@ typedef struct sort_single {
 } __aligned(8) sort_single_t;
 
 typedef struct {
-        sort_single_t *last_single;
+        sort_single_t *head;
 } __aligned(4) sort_list_t;
 
-typedef void (*iterate_fn)(const sort_single_t *);
+typedef void (*sort_iterate_fn_t)(const sort_single_t *);
 
 typedef struct {
         list_flags_t flags;
@@ -130,10 +130,10 @@ typedef struct {
         list_t * const plist;
 } __aligned(16) state_t;
 
-extern state_t * const _internal_state;
+extern state_t * const __state;
 
-extern void internal_list_alloc(list_t *list, uint16_t count);
-extern void internal_list_free(list_t *list);
-extern void internal_list_set(list_t *list, void *list_p, uint16_t count);
+extern void __list_alloc(list_t *list, uint16_t count);
+extern void __list_free(list_t *list);
+extern void __list_set(list_t *list, void *list_p, uint16_t count);
 
 #endif /* !_SEGA3D_INTERNAL_H_ */

@@ -28,33 +28,28 @@ providing lightweight abstractions between your program and the hardware.
 
 Visit [yaul.org][1].
 
-## Pre-built environment
+## Installation
 
 ### Windows
 
-#### Installer
-
-If you don't already have MSYS2 installed, download the _Yaul MSYS2 64-bit_
-installer from the release [page][2].
-
-#### Existing MSYS2
+<details>
+  <summary>MSYS2</summary>
 
 If you already have MSYS2 installed, follow the directions below to setup access
-to the package repository.
+to the package repository. If not, download and install MSYS2 [here][7] first,
+then continue to follow the instructions below.
 
-1. Open `/etc/pacman.conf` and at the end of the file, add the following:
+1. From the Start menu, open _MSYS MinGW 64-bit_.
+
+2. Open `/etc/pacman.conf` and at the end of the file, add the following:
 
        [yaul-mingw-w64]
        SigLevel = Optional TrustAll
        Server = http://packages.yaul.org/mingw-w64/x86_64
 
-2. Sync and refresh the databases.
+3. Go back to the shell and sync and refresh the databases.
 
        pacman -Syy
-
-3. To list the packages for the `yaul-mingw-w64` repository, use:
-
-       pacman -Sl yaul-mingw-w64
 
 4. Install everything.
 
@@ -65,18 +60,19 @@ to the package repository.
          yaul-emulator-mednafen \
          yaul-examples-git
 
-5. Be sure to copy `/opt/tool-chains/sh2eb-elf/yaul.env.in`. This is your
-   environment file.
+5. Once all the packages have been installed, close the existing shell and start
+   a new one.
 
-6. Once copied, follow the steps in setting up your [environment
-   file](#setting-up-environment-file).
+6. Test your environment by [building an example](#building-and-running-an-example).
 
-7. Test your environment by building an
-   [example](#building-and-running-an-example).
+</details>
+
+<a name="linux"></a>
 
 ### Linux
 
-#### Arch
+<details>
+  <summary>Arch</summary>
 
 Follow the directions below to setup access to the Arch Linux package
 repository, or build the [packages][6] yourself.
@@ -92,11 +88,7 @@ repository, or build the [packages][6] yourself.
 
        pacman -Syy
 
-3. To list the packages for the `yaul-linux` repository, use:
-
-       pacman -Sl yaul-linux
-
-4. Install everything.
+3. Install everything.
 
        pacman -S \
          yaul-tool-chain-git \
@@ -105,65 +97,85 @@ repository, or build the [packages][6] yourself.
          yaul-emulator-kronos \
          yaul-examples-git
 
-5. Be sure to copy `/opt/tool-chains/sh2eb-elf/yaul.env.in`. This is your
-   environment file.
+4. Once all the packages have been installed, close the existing shell and start
+   a new one.
 
-6. Once copied, follow the steps in setting up your [environment
-   file](#setting-up-environment-file).
+5. Test your environment by [building an example](#building-and-running-an-example).
 
-7. Test your environment by building an
-   [example](#building-and-running-an-example).
+</details>
 
-#### Debian based
+<details>
+  <summary>Debian based</summary>
 
-There are currently no `.deb` packages available.
+There are currently no `.deb` packages available. You will
+need to [build Yaul](#building-tool-chain-from-source).
+
+</details>
 
 ### MacOS X
 
-There are currently no packages available.
+There are currently no packages available. You will
+need to [build Yaul](#building-tool-chain-from-source).
+
+<a href="building-tool-chain-from-source"></a>
+
+### Docker
+
+A [`Dockerfile`][8] file is available.
 
 ## Building tool-chain from source
 
-Follow the instructions found in the [`build-scripts/`][5] submodule directory.
-Please note, you still need to [build Yaul](#building-yaul-manually).
+Follow the instructions found in the [`build-scripts/`][5] directory. Please
+note that you still need to [build Yaul](#building-yaul-manually).
 
-## Building Yaul manually
+<a href="building-yaul-manually"></a>
 
-### Cloning the repository
+## Setting and building Yaul manually
 
-1. Clone the repository.
+<details>
+  <summary>Cloning the repository</summary>
 
-       git clone --recursive "https://github.com/ijacquez/libyaul.git"
+1. Clone the respository
 
-### Building
+       git clone "https://github.com/ijacquez/libyaul.git"
 
-1. Follow the steps in setting up your [environment
-   file](#setting-up-environment-file).
+2. Initialize the submodules
 
-2. Build and install the supported libraries.
+       git submodule init
 
-       SILENT=1 make install-release
+3. Update the registered submodules
 
-   If any given library in Yaul is being debugged, use the `install-debug`
-   target instead. Either _release_ or _debug_ can currently be installed at one
-   time. It's possible to switch between the two in the same installation.
+       git submodule update
 
-   To find more about other targets, call `make list-targets`.
+</details>
 
-3. Build and install the tools.
+<a name="setting-up-the-environment-file"></a>
 
-       SILENT=1 make install-tools
+<details>
+  <summary>Setting up the environment file</summary>
 
-4. Test your environment by building an
-   [example](#building-and-running-an-example).
+1. Copy the template `/opt/tool-chains/sh2eb-elf/yaul.env.in` to your home
+   directory as `.yaul.env`. This is your environment file.
 
-## Setting up environment file
+2. Read the environment file `.yaul.env` into your current shell.
 
-1. Copy the template `yaul.env.in` to your home directory as `.yaul.env`. This
-   is your environment file.
+       source $HOME/.yaul.env
 
-2. Open `.yaul.env` in a text editor and change the following to define your
-   environment:
+3. Reading the environment file needs to be done every time a new shell is
+   opened. To avoid having to do this every time, add the line below to your
+   shell's startup file.
+
+       echo 'source $HOME/.yaul.env' >> $HOME/.bash_profile
+
+   If `.bash_profile` is not used, use `.profile` instead. This is dependent on
+   your set up.
+
+</details>
+
+<details>
+  <summary>Configuring the environment file</summary>
+
+Open `$HOME/.yaul.env` in a text editor and change the following to define your environment:
 
    1. Set the absolute path to the tool-chain in `YAUL_INSTALL_ROOT`.
    2. If necessary, set `YAUL_PROG_SH_PREFIX` and `YAUL_ARCH_SH_PREFIX`.
@@ -177,52 +189,68 @@ Please note, you still need to [build Yaul](#building-yaul-manually).
 
    Setting the wrong values may result in compilation errors.
 
-3. Read the environment file `.yaul.env` into your current shell.
+</details>
 
-       source ~/.yaul.env
+<details>
+  <summary>Building</summary>
 
-4. Reading the environment file needs to be done every time a new shell is
-   opened. To avoid having to do this every time, add the line below to your
-   shell's startup file.
+1. Build and install the supported libraries.
 
-       echo 'source ~/.yaul.env' >> ~/.bash_profile
+       SILENT=1 make install-debug
 
-   If `.bash_profile` is not used, use `.profile` instead. This is dependent on
-   your set up.
+   If any given library in Yaul is being debugged, use the `install-debug`
+   target instead. Either _release_ or _debug_ can currently be installed at one
+   time. It's possible to switch between the two in the same installation.
+
+   To find more about other targets, call `make list-targets`.
+
+2. Build and install the tools.
+
+       SILENT=1 make install-tools
+
+3. Test your environment by building an
+   [example](#building-and-running-an-example).
+
+</details>
+
+<a name="building-and-running-an-example"></a>
 
 ## Building and running an example
 
 1. If you've built Yaul manually, check out any example in the [`examples`][4]
    submodule. Otherwise, go to `/opt/yaul-examples/`.
 
-2. Copy the `vdp1-balls` example to your home directory
+2. Copy the `vdp1-zoom-sprite` directory to your home directory
 
-       cp -r vdp1-balls ~
+       cp -r /opt/yaul-examples/vdp1-zoom-sprite $HOME/
 
-3. Build `vdp1-balls`
+3. Build `vdp1-sprite`
 
-       cd ~/vdp1-balls
+       cd $HOME/vdp1-zoom-sprite
        SILENT=1 make clean
        SILENT=1 make
 
-4. If you have Mednafen or Yabause correctly configured, you can test the
-   example.
+4. Use Mednafen to test the example.
 
-       mednafen vdp1-balls.cue
+       mednafen vdp1-zoom-sprite.cue
+
+   If Mednafen is unable to find the Sega Saturn BIOS image, please confirm that,
+
+     1. The file is named `mpr-17933.bin` and that it exists relative to the
+        `firmware` directory under the [Mednafen base directory][9].
+
+     2. The calculated MD5 hash of the file is `3240872c70984b6cbfda1586cab68dbe`.
 
 5. Success! :tada:
-
-<p align="center">
-  <img src=".images/results.png" alt="Balls!">
-</p>
 
 ## Contact
 
 You can find me (*@mrkotfw*) on [Discord]( https://discord.gg/S434dWA).
 
 [1]: https://yaul.org/
-[2]: https://github.com/ijacquez/libyaul-installer/releases/latest
-[3]: https://github.com/ijacquez/libyaul-packages/releases/latest
 [4]: https://github.com/ijacquez/libyaul-examples
 [5]: https://github.com/ijacquez/libyaul-build-scripts
 [6]: https://github.com/ijacquez/libyaul-packages
+[7]: https://www.msys2.org/
+[8]: https://github.com/ijacquez/libyaul-docker
+[9]: https://mednafen.github.io/documentation/#Section_base_directory
