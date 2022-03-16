@@ -57,7 +57,6 @@ typedef int32_t fix8_32_t;
 #define FIX8_MIN       (fix8_t)(0x8000)
 #define FIX8_OVERFLOW  (fix8_t)(0x8000)
 
-// TODO: Romulo
 #define FIX8_2PI       (fix8_t)(0x0324)
 #define FIX8_PI        (fix8_t)(0x0192)
 #define FIX8_PI_2      (fix8_t)(0x00C9)
@@ -185,6 +184,7 @@ extern fix8_t fix8_sqrt(const fix8_t) FIXMATH_FUNC_ATTRS;
 extern fix8_t fix8_32_sqrt(const fix8_32_t) FIXMATH_FUNC_ATTRS;
 
 extern uint32_t fix8_str(fix8_t, char *, int);
+extern uint32_t fix8_32_str(fix8_32_t, char *, int);
 
 #define _FIX8_INCLUDE_ONCE
 

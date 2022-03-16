@@ -26,6 +26,7 @@
 #include <ctype.h>
 
 #include "fix8.h"
+#include "fix16.h"
 
 static char *_itoa_loop(char *buf, uint16_t scale, uint16_t value, bool skip);
 
@@ -34,6 +35,16 @@ static const uint16_t _scales[3] = {
         1,
         10,
         100
+};
+
+static const uint32_t _scales_32[6] = {
+        /* 6 decimals is enough for full fix8_32_t precision */
+        1,
+        10,
+        100,
+        1000,
+        10000,
+        100000
 };
 
 uint32_t
@@ -53,6 +64,44 @@ fix8_str(fix8_t value, char *buf, int decimals)
         uint16_t scale = _scales[decimals & 2];
 
         frac_part = fix8_mul(frac_part, scale);
+
+        if (frac_part >= scale) {
+                /* Handle carry from decimal part */
+                int_part++;
+                frac_part -= scale;
+        }
+
+        /* Format integer part */
+        buf = _itoa_loop(buf, 10000, int_part, true);
+
+        /* Format decimal part (if any) */
+        if (scale != 1) {
+                *buf++ = '.';
+                buf = _itoa_loop(buf, scale / 10, frac_part, false);
+        }
+
+        *buf = '\0';
+
+        return (buf - start_buf);
+}
+
+uint32_t
+fix8_32_str(fix8_32_t value, char *buf, int decimals)
+{
+        const uint32_t uvalue = (value >= 0) ? value : -value;
+
+        const char *start_buf = buf;
+
+        if (value < 0) {
+                *buf++ = '-';
+        }
+
+        /* Separate the integer and decimal parts of the value */
+        unsigned int_part = uvalue >> 7;
+        uint32_t frac_part = uvalue & 0x7F;
+        uint32_t scale = _scales_32[decimals & 7];
+
+        frac_part = fix16_mul(frac_part, scale);
 
         if (frac_part >= scale) {
                 /* Handle carry from decimal part */
