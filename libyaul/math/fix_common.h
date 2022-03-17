@@ -37,13 +37,13 @@ __BEGIN_DECLS
 static inline fix8_t __always_inline
 fix8_fix16_from(const fix16_t value)
 {
-        return (value >> 9);
+        return value >> 9;
 }
 
 static inline fix16_t __always_inline
 fix8_fix16_to(const fix8_t value)
 {
-        return (value << 9);
+        return ((fix16_t)value) << 9;
 }
 
 #undef FIXMATH_FUNC_ATTRS

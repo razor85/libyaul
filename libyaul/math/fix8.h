@@ -181,7 +181,8 @@ extern fix8_t fix8_lerp(const fix8_t, const fix8_t, const fix8_t) FIXMATH_FUNC_A
 extern fix8_t fix8_lerp8(const fix8_t, const fix8_t, const uint8_t) FIXMATH_FUNC_ATTRS;
 
 extern fix8_t fix8_sqrt(const fix8_t) FIXMATH_FUNC_ATTRS;
-extern fix8_t fix8_32_sqrt(const fix8_32_t) FIXMATH_FUNC_ATTRS;
+extern fix8_t fix8_sqrt_precise(const fix8_32_t) FIXMATH_FUNC_ATTRS;
+extern fix8_32_t fix8_32_sqrt_precise(const fix8_32_t) FIXMATH_FUNC_ATTRS;
 
 extern uint32_t fix8_str(fix8_t, char *, int);
 extern uint32_t fix8_32_str(fix8_32_t, char *, int);
@@ -192,7 +193,7 @@ extern uint32_t fix8_32_str(fix8_32_t, char *, int);
 // #include "fix8_trig.h"
 
 #include "fix8_vec2.h"
-// #include "fix8_vec3.h"
+#include "fix8_vec3.h"
 
 // #include "fix8_mat3.h"
 

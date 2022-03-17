@@ -210,6 +210,7 @@ LIB_SRCS+= \
 	math/color.c \
 	math/fix8.c \
 	math/fix8_vec2.c \
+	math/fix8_vec3.c \
 	math/fix8_sqrt.c \
 	math/fix8_str.c \
 	math/fix16.c \
@@ -318,6 +319,7 @@ INSTALL_HEADER_FILES+= \
 	./math/:fix_common.h:yaul/math/ \
 	./math/:fix8.h:yaul/math/ \
 	./math/:fix8_vec2.h:yaul/math/ \
+	./math/:fix8_vec3.h:yaul/math/ \
 	./math/:fix16.h:yaul/math/ \
 	./math/:fix16_mat3.h:yaul/math/ \
 	./math/:fix16_plane.h:yaul/math/ \

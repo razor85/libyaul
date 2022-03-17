@@ -77,8 +77,8 @@ fix8_sqrt(fix8_t value)
         return q;
 }
 
-fix8_t
-fix8_32_sqrt(fix8_32_t value)
+fix8_32_t
+fix8_32_sqrt_precise(fix8_32_t value)
 {
         uint32_t t;
 
@@ -105,5 +105,12 @@ fix8_32_sqrt(fix8_32_t value)
 
         q >>= 12;
 
-        return (fix8_t)q;
+        return q;
 }
+
+fix8_t
+fix8_sqrt_precise(fix8_32_t value)
+{
+        return (fix8_t) fix8_32_sqrt_precise(value);
+}
+

@@ -88,10 +88,15 @@ fix8_vec2_length(const fix8_vec2_t *v0)
 fix8_t
 fix8_vec2_length_precise(const fix8_vec2_t *v0)
 {
-        const fix8_32_t r = fix8_vec2_dot_precise(v0, v0);
-        const fix8_t sqrt = fix8_32_sqrt(r);
+        const fix8_32_t r = fix8_32_vec2_dot_precise(v0, v0);
+        return fix8_sqrt_precise(r);
+}
 
-        return sqrt;
+fix8_32_t
+fix8_32_vec2_length_precise(const fix8_vec2_t *v0)
+{
+        const fix8_32_t r = fix8_32_vec2_dot_precise(v0, v0);
+        return fix8_32_sqrt_precise(r);
 }
 
 fix8_t
@@ -109,7 +114,7 @@ fix8_vec2_dot(const fix8_vec2_t *a, const fix8_vec2_t *b)
 }
 
 fix8_32_t
-fix8_vec2_dot_precise(const fix8_vec2_t *a, const fix8_vec2_t *b)
+fix8_32_vec2_dot_precise(const fix8_vec2_t *a, const fix8_vec2_t *b)
 {
         return fix8_vec2_inline_dot_precise(a, b);
 }
