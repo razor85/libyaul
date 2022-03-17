@@ -195,9 +195,9 @@ extern uint32_t fix8_32_str(fix8_32_t, char *, int);
 #include "fix8_vec2.h"
 #include "fix8_vec3.h"
 
-// #include "fix8_mat3.h"
+#include "fix8_mat3.h"
 
-// #include "fix8_plane.h"
+#include "fix8_plane.h"
 
 #undef _FIX8_INCLUDE_ONCE
 
