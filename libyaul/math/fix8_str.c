@@ -49,8 +49,8 @@ fix8_str(fix8_t value, char *buf, int decimals)
         }
 
         /* Separate the integer and decimal parts of the value */
-        uint16_t int_part = uvalue >> 7;
-        uint16_t frac_part = uvalue & 0x7F;
+        uint16_t int_part = uvalue >> 8;
+        uint16_t frac_part = uvalue & 0xFF;
         uint16_t scale = _scales[decimals & 2];
 
         frac_part = fix8_mul(frac_part, scale);
@@ -87,8 +87,8 @@ fix8_32_str(fix8_32_t value, char *buf, int decimals)
         }
 
         /* Separate the integer and decimal parts of the value */
-        uint32_t int_part = uvalue >> 7;
-        uint32_t frac_part = uvalue & 0x7F;
+        uint32_t int_part = uvalue >> 8;
+        uint32_t frac_part = uvalue & 0xFF;
         uint32_t scale = (uint32_t) _scales[decimals & 2];
 
         frac_part = fix16_mul(frac_part, scale << 9);

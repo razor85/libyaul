@@ -101,7 +101,6 @@ fix8_vec3_inline_dot(const fix8_vec3_t *a, const fix8_vec3_t *b)
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tsts macl, %[aux]\n"
-                          "\tshal %[aux]\n"
                           "\tshlr8 %[aux]\n"
             : [a] "+r" (a),
               [b] "+r" (b),
@@ -123,7 +122,6 @@ fix8_32_vec3_inline_dot_precise(const fix8_vec3_t *a, const fix8_vec3_t *b)
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tsts macl, %[aux]\n"
-                          "\tshal %[aux]\n"
                           "\tshlr8 %[aux]\n"
             : [a] "+r" (a),
               [b] "+r" (b),

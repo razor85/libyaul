@@ -46,8 +46,8 @@ __BEGIN_DECLS
  * inlined functions below */
 
 #define FIX8(x) ((fix8_t)(((x) >= 0)                                         \
-        ? ((x) * 128.0f + 0.5f)                                              \
-        : ((x) * 128.0f - 0.5f)))
+        ? ((x) * 256.0f + 0.5f)                                              \
+        : ((x) * 256.0f - 0.5f)))
 
 /// Not yet documented.
 typedef int16_t fix8_t;
@@ -57,14 +57,14 @@ typedef int32_t fix8_32_t;
 #define FIX8_MIN       (fix8_t)(0x8000)
 #define FIX8_OVERFLOW  (fix8_t)(0x8000)
 
-#define FIX8_2PI       (fix8_t)(0x0324)
-#define FIX8_PI        (fix8_t)(0x0192)
-#define FIX8_PI_2      (fix8_t)(0x00C9)
-#define FIX8_PI_4      (fix8_t)(0x0065)
-#define FIX8_E         (fix8_t)(0x015C)
-#define FIX8_ONE       (fix8_t)(0x0080)
-#define FIX8_RAD2DEG   (fix8_t)(0x1CA6)
-#define FIX8_DEG2RAD   (fix8_t)(0x0002)
+#define FIX8_2PI       (fix8_t)(0x0648)
+#define FIX8_PI        (fix8_t)(0x0324)
+#define FIX8_PI_2      (fix8_t)(0x0192)
+#define FIX8_PI_4      (fix8_t)(0x00C9)
+#define FIX8_E         (fix8_t)(0x02B8)
+#define FIX8_ONE       (fix8_t)(0x0100)
+#define FIX8_RAD2DEG   (fix8_t)(0x394C)
+#define FIX8_DEG2RAD   (fix8_t)(0x0004)
 
 static inline fix8_t __always_inline
 fix8_mul(const fix8_t a, const fix8_t b)
@@ -74,7 +74,6 @@ fix8_mul(const fix8_t a, const fix8_t b)
         __asm__ volatile ("\tclrmac\n"
                           "\tmuls.w %[a], %[b]\n"
                           "\tsts macl, %[out]\n"
-                          "\tshal %[out]\n"
                           "\tshlr8 %[out]\n"
             /* Output */
             : [out] "=&r" (out)
@@ -95,7 +94,7 @@ fix8_int16_from(int16_t value)
 static inline int16_t __always_inline
 fix8_int16_to(const fix8_t value)
 {
-        return (value >> 7);
+        return (value >> 8);
 }
 
 static inline int16_t __always_inline

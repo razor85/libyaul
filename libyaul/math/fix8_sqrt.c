@@ -55,7 +55,7 @@ fix8_sqrt(fix8_t value)
         r = value;
 
         uint16_t b;
-        b = 0x2000;
+        b = 0x4000;
 
         uint16_t q;
         q = 0;
@@ -86,7 +86,7 @@ fix8_32_sqrt_precise(fix8_32_t value)
         r = value;
 
         uint32_t b;
-        b = 0x20000000;
+        b = 0x40000000;
 
         uint32_t q;
         q = 0;

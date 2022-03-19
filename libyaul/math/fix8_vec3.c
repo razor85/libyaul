@@ -29,9 +29,9 @@ void
 fix8_vec3_normalize_precise(fix8_vec3_t *result __unused)
 {
         fix16_vec3_t f16 = {
-                .x = ((fix16_t)result->x) << 9,
-                .y = ((fix16_t)result->y) << 9,
-                .z = ((fix16_t)result->z) << 9
+                .x = ((fix16_t)result->x) << 8,
+                .y = ((fix16_t)result->y) << 8,
+                .z = ((fix16_t)result->z) << 8
         };
 
         const fix16_t length = fix16_vec3_length(&f16);
@@ -41,9 +41,9 @@ fix8_vec3_normalize_precise(fix8_vec3_t *result __unused)
         const fix16_t scale = cpu_divu_quotient_get();
 
         fix16_vec3_scale(scale, &f16);
-        result->x = f16.x >> 9;
-        result->y = f16.y >> 9;
-        result->z = f16.z >> 9;
+        result->x = f16.x >> 8;
+        result->y = f16.y >> 8;
+        result->z = f16.z >> 8;
 }
 
 void
@@ -64,9 +64,9 @@ fix8_vec3_normalized_precise(const fix8_vec3_t * __restrict v0,
     fix8_vec3_t * __restrict result)
 {
         fix16_vec3_t f16 = {
-                .x = ((fix16_t)v0->x) << 9,
-                .y = ((fix16_t)v0->y) << 9,
-                .z = ((fix16_t)v0->z) << 9
+                .x = ((fix16_t)v0->x) << 8,
+                .y = ((fix16_t)v0->y) << 8,
+                .z = ((fix16_t)v0->z) << 8
         };
 
         const fix16_t length = fix16_vec3_length(&f16);
@@ -76,9 +76,9 @@ fix8_vec3_normalized_precise(const fix8_vec3_t * __restrict v0,
         const fix16_t scale = cpu_divu_quotient_get();
 
         fix16_vec3_scale(scale, &f16);
-        result->x = f16.x >> 9;
-        result->y = f16.y >> 9;
-        result->z = f16.z >> 9;
+        result->x = f16.x >> 8;
+        result->y = f16.y >> 8;
+        result->z = f16.z >> 8;
 }
 
 fix8_t
