@@ -18,4 +18,5 @@
 extern fix8_t fix8_sin(fix8_t) FIXMATH_FUNC_ATTRS;
 extern fix8_t fix8_cos(fix8_t) FIXMATH_FUNC_ATTRS;
 extern fix8_t fix8_tan(fix8_t) FIXMATH_FUNC_ATTRS;
+extern fix8_t fix8_tan_precise(fix8_t) FIXMATH_FUNC_ATTRS;
 extern fix8_t fix8_atan2(fix8_t y, fix8_t x) FIXMATH_FUNC_ATTRS;

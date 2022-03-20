@@ -51,21 +51,42 @@ fix8_cos(fix8_t radians)
 fix8_t
 fix8_tan(const fix8_t radians)
 {
-        // TODO: Romulo
-        /*
-        const int32_t bradians = _rad2brad_convert(radians);
-        const fix8_t cos = fix8_bradians_cos(bradians);
+        // Precise and faster result
+        if (radians == FIX8_PI_4) {
+                return FIX8_ONE;
+        }
 
-        cpu_divu_fix8_set(FIX8(1.0f), cos);
+        const fix8_t cos = fix8_cos(radians);
 
-        const fix8_t sin = fix8_bradians_sin(bradians);
+        cpu_divu_fix16_set(FIX16_ONE, cos << 8);
 
-        const fix8_t quotient = cpu_divu_quotient_get();
-        const fix8_t result = fix8_mul(sin, quotient);
+        const fix8_t sin = fix8_sin(radians);
 
+        const fix16_t quotient = cpu_divu_quotient_get();
+
+        const fix8_t result = fix8_mul(sin, quotient >> 8);
         return result;
-        */
-       return 0;
+}
+
+fix8_t
+fix8_tan_precise(const fix8_t radians)
+{
+        // Precise and faster result
+        if (radians == FIX8_PI_4) {
+                return FIX8_ONE;
+        }
+
+        const fix16_t cos = fix8_cos(radians) << 8;
+
+        cpu_divu_fix16_set(FIX16(1.0f), cos);
+
+        const fix16_t sin = fix8_sin(radians) << 8;
+
+        const fix16_t quotient = cpu_divu_quotient_get();
+
+        const fix16_t result = fix16_mul(sin, quotient);
+
+        return result >> 8;
 }
 
 fix8_t

@@ -61,6 +61,7 @@ typedef int32_t fix8_32_t;
 #define FIX8_PI        (fix8_t)(0x0324)
 #define FIX8_PI_2      (fix8_t)(0x0192)
 #define FIX8_PI_4      (fix8_t)(0x00C9)
+#define FIX8_PI_6      (fix8_t)(0x0086)
 #define FIX8_E         (fix8_t)(0x02B8)
 #define FIX8_ONE       (fix8_t)(0x0100)
 #define FIX8_ZERO      (fix8_t)(0x0000)
