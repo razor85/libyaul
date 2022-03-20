@@ -63,6 +63,7 @@ typedef int32_t fix8_32_t;
 #define FIX8_PI_4      (fix8_t)(0x00C9)
 #define FIX8_E         (fix8_t)(0x02B8)
 #define FIX8_ONE       (fix8_t)(0x0100)
+#define FIX8_ZERO      (fix8_t)(0x0000)
 #define FIX8_RAD2DEG   (fix8_t)(0x394C)
 #define FIX8_DEG2RAD   (fix8_t)(0x0004)
 
@@ -188,8 +189,7 @@ extern uint32_t fix8_32_str(fix8_32_t, char *, int);
 
 #define _FIX8_INCLUDE_ONCE
 
-// TODO: Romulo
-// #include "fix8_trig.h"
+#include "fix8_trig.h"
 
 #include "fix8_vec2.h"
 #include "fix8_vec3.h"
