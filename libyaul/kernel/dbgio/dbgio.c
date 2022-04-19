@@ -11,15 +11,17 @@
 
 #include <internal.h>
 
+#include "dbgio-internal.h"
+
 /* This is enough for a 352x256 character resolution */
 #define SPRINTF_BUFFER_SIZE (1408)
 
 static struct {
         volatile uint32_t state;
-        const struct dbgio_dev_ops *dev_ops;
+        const dbgio_dev_ops_t *dev_ops;
 } _dbgio_state;
 
-static const struct dbgio_dev_ops *_dev_ops_table[] = {
+static const dbgio_dev_ops_t *_dev_ops_table[] = {
         &__dev_ops_null,
         NULL,
         &__dev_ops_vdp2,

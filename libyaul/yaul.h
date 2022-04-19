@@ -51,10 +51,10 @@
 #include <scu/bus/b/scsp/scsp.h>
 
 /* Kernel */
-#include <common/ip.h>
+#include <ip/ip.h>
 
 #if HAVE_GDB_SUPPORT == 1
-#include <common/gdb/gdb.h>
+#include <gdb/gdb.h>
 #endif /* HAVE_GDB_SUPPORT */
 
 #include <dbgio/dbgio.h>
@@ -73,6 +73,6 @@
 
 #include <ssload.h>
 
-#include <fs/iso9660/iso9660.h>
+#include <fs/cd/cdfs.h>
 
 #endif /* !_YAUL_H_ */

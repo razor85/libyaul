@@ -15,7 +15,8 @@
 
 #include <vdp.h>
 
-#include <sys/dma-queue.h>
+#include <sys/dma-queue-internal.h>
+#include <sys/callback-list-internal.h>
 
 #include "vdp-internal.h"
 
@@ -97,7 +98,7 @@
 
 struct vdp1_mode_table;
 
-typedef void (*vdp1_mode_func_ptr)(void);
+typedef void (*vdp1_mode_func_t)(void);
 
 struct vdp1_state {
         unsigned int flags:6;
@@ -114,28 +115,33 @@ static_assert(sizeof(struct vdp1_state) == 8);
 
 struct vdp2_state {
         uint8_t flags;
-        scu_dma_level_t commit_level;
 } __aligned(4);
 
-static_assert(sizeof(struct vdp2_state) == 8);
+static_assert(sizeof(struct vdp2_state) == 4);
 
-static volatile struct {
-        struct vdp1_state vdp1;
-        struct vdp2_state vdp2;
-        uint8_t flags;
+static struct {
+        volatile struct vdp1_state vdp1;
+        volatile struct vdp2_state vdp2;
+        volatile uint8_t flags;
+        dma_queue_t dma_queue;
 } _state __aligned(16);
 
-static_assert(sizeof(_state) == 20);
+static_assert(sizeof(_state) == 24);
 
 static scu_dma_handle_t _vdp1_dma_handle;
 static scu_dma_handle_t _vdp1_orderlist_dma_handle;
 static scu_dma_handle_t _vdp1_stride_dma_handle;
+static scu_dma_handle_t _dma_handle;
+
+static void _dma_queue_init(void);
+static void _dma_queue_transfer(void);
 
 static callback_t _vdp1_put_callback;
 static callback_t _vdp1_render_callback;
 static callback_t _vdp1_transfer_over_callback;
 static callback_t _vblank_in_callback;
 static callback_t _vblank_out_callback;
+static callback_list_t *_dma_callback_list;
 
 static const uint16_t _fbcr_bits[] __unused = {
         /* Render even-numbered lines */
@@ -186,11 +192,11 @@ static void _vdp1_mode_variable_vblank_out(void);
 
 /* Interface to either of the three modes */
 static const struct vdp1_mode_table {
-        vdp1_mode_func_ptr dma;
-        vdp1_mode_func_ptr sync_render;
-        vdp1_mode_func_ptr sprite_end;
-        vdp1_mode_func_ptr vblank_in;
-        vdp1_mode_func_ptr vblank_out;
+        vdp1_mode_func_t dma;
+        vdp1_mode_func_t sync_render;
+        vdp1_mode_func_t sprite_end;
+        vdp1_mode_func_t vblank_in;
+        vdp1_mode_func_t vblank_out;
 } _vdp1_mode_table[] = {
         {
                 .dma         = _vdp1_mode_auto_dma,
@@ -226,7 +232,8 @@ static void _vdp1_dma_transfer(const scu_dma_handle_t *dma_handle);
 
 static void _vdp2_init(void);
 
-static void _scu_dma_level_end_handler(void *work);
+static void _dma_level_end_handler(void *work);
+static void _vdp1_dma_level_end_handler(void *work);
 static void _vblank_in_handler(void);
 static void _vblank_out_handler(void);
 
@@ -241,6 +248,7 @@ __vdp_sync_init(void)
 
         _state.flags = SYNC_FLAG_NONE;
 
+        _dma_queue_init();
         _vdp1_init();
         _vdp2_init();
 
@@ -253,6 +261,18 @@ __vdp_sync_init(void)
         scu_ic_mask_chg(SCU_MASK_UNMASK, SCU_IC_MASK_NONE);
 
         cpu_intc_mask_set(sr_mask);
+}
+
+void
+vdp_dma_enqueue(void *dst, const void *src, size_t len)
+{
+        dma_queue_enqueue(&_state.dma_queue, dst, src, len);
+}
+
+uint32_t
+vdp_dma_count_get(void)
+{
+        return _state.dma_queue.count;
 }
 
 void
@@ -539,6 +559,18 @@ vdp2_sync_wait(void)
         DEBUG_PRINTF("%s: Exit L%i\n", __FUNCTION__, __LINE__);
 }
 
+callback_id_t
+vdp_dma_callback_add(callback_handler_t callback_handler, void *work)
+{
+        return callback_list_callback_add(_dma_callback_list, callback_handler, work);
+}
+
+void
+vdp_dma_callback_remove(callback_id_t callback_id)
+{
+        callback_list_callback_remove(_dma_callback_list, callback_id);
+}
+
 void
 vdp_sync_vblank_in_set(callback_handler_t callback_handler, void *work)
 {
@@ -549,6 +581,47 @@ void
 vdp_sync_vblank_out_set(callback_handler_t callback_handler, void *work)
 {
         callback_set(&_vblank_out_callback, callback_handler, work);
+}
+
+static void
+_dma_queue_init(void)
+{
+        __dma_queue_init(&_state.dma_queue);
+
+        _dma_callback_list = __callback_list_alloc(DMA_QUEUE_REQUESTS_MAX_COUNT);
+
+        const scu_dma_level_cfg_t dma_cfg = {
+                .mode          = SCU_DMA_MODE_INDIRECT,
+                .xfer.indirect = _state.dma_queue.xfer_table,
+                .space         = SCU_DMA_SPACE_BUS_B,
+                .stride        = SCU_DMA_STRIDE_2_BYTES,
+                .update        = SCU_DMA_UPDATE_NONE
+        };
+
+        scu_dma_config_buffer(&_dma_handle, &dma_cfg);
+}
+
+static void
+_dma_queue_transfer(void)
+{
+        dma_queue_t * const dma_queue = &_state.dma_queue;
+
+        if (dma_queue_count_get(dma_queue) == 0) {
+                return;
+        }
+
+        /* Always use SCU-DMA level 0 as there may be transfers larger than
+         * 4KiB */
+        scu_dma_level_wait(0);
+        scu_dma_config_set(0, SCU_DMA_START_FACTOR_ENABLE, &_dma_handle, NULL);
+        scu_dma_level_end_set(0, _dma_level_end_handler, NULL);
+
+        cpu_cache_purge();
+
+        scu_dma_level_fast_start(0);
+        scu_dma_level_wait(0);
+
+        dma_queue_clear(dma_queue);
 }
 
 static void
@@ -1001,8 +1074,7 @@ static void
 _vdp1_dma_transfer(const scu_dma_handle_t *dma_handle)
 {
         scu_dma_config_set(0, SCU_DMA_START_FACTOR_ENABLE, dma_handle, NULL);
-
-        scu_dma_level_end_set(0, _scu_dma_level_end_handler, NULL);
+        scu_dma_level_end_set(0, _vdp1_dma_level_end_handler, NULL);
 
         cpu_cache_purge();
 
@@ -1012,10 +1084,6 @@ _vdp1_dma_transfer(const scu_dma_handle_t *dma_handle)
 static void
 _vdp2_init(void)
 {
-        extern void __vdp2_xfer_table_init(void);
-
-        __vdp2_xfer_table_init();
-
         _state.vdp2.flags = VDP2_FLAG_IDLE;
 }
 
@@ -1034,20 +1102,9 @@ _vdp2_sync_commit(void)
         state_vdp2_flags &= ~VDP2_FLAG_REGS_COMMITTED;
         state_vdp2_flags |= VDP2_FLAG_REQUEST_COMMIT_REGS;
 
-        scu_dma_level_t level;
-        level = 0;
-
-        /* Find an available SCU-DMA level */
-        if ((scu_dma_level_busy(level))) {
-                if ((level = scu_dma_level_unused_get()) < 0) {
-                        level = 0;
-                }
-        }
-
-        _state.vdp2.commit_level = level;
         _state.vdp2.flags = state_vdp2_flags;
 
-        __vdp2_commit(level);
+        __vdp2_commit(2);
 
         DEBUG_PRINTF("%s: Exit L%i\n", __FUNCTION__, __LINE__);
 }
@@ -1064,7 +1121,7 @@ _vdp2_sync_commit_wait(void)
                 return;
         }
 
-        __vdp2_commit_wait(_state.vdp2.commit_level);
+        __vdp2_commit_wait(2);
 
         state_vdp2_flags &= ~VDP2_FLAG_REQUEST_COMMIT_REGS;
         state_vdp2_flags |= VDP2_FLAG_REGS_COMMITTED;
@@ -1075,7 +1132,16 @@ _vdp2_sync_commit_wait(void)
 }
 
 static void
-_scu_dma_level_end_handler(void *work __unused)
+_dma_level_end_handler(void *work __unused)
+{
+        scu_dma_level_end_set(0, NULL, NULL);
+
+        callback_list_process(_dma_callback_list);
+        callback_list_clear(_dma_callback_list);
+}
+
+static void
+_vdp1_dma_level_end_handler(void *work __unused)
 {
         scu_dma_level_end_set(0, NULL, NULL);
 
@@ -1103,11 +1169,7 @@ _vblank_in_handler(void)
                 _vdp2_sync_commit();
         }
 
-        int ret __unused;
-        ret = dma_queue_flush(DMA_QUEUE_TAG_VBLANK_IN);
-        assert(ret >= 0);
-
-        dma_queue_flush_wait();
+        _dma_queue_transfer();
 
         _vdp2_sync_commit_wait();
 

@@ -10,6 +10,8 @@
 #include <mm/tlsf.h>
 #include <mm/mm_stats.h>
 
+#include <scu/map.h>
+
 #include <internal.h>
 
 #define TLSF_HANDLE_PRIVATE       (0)

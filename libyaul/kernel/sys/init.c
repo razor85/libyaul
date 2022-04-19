@@ -18,6 +18,10 @@
 #include <cd-block.h>
 
 #include <internal.h>
+#include <cpu-internal.h>
+#include <dbgio/dbgio-internal.h>
+#include <smpc-internal.h>
+#include <vdp-internal.h>
 
 void __weak
 user_init(void)
@@ -64,11 +68,7 @@ _init(void)
 
 #if HAVE_DEV_CARTRIDGE == 1 /* USB flash cartridge */
         __usb_cart_init();
-#else
-        __dram_cart_init();
 #endif /* HAVE_DEV_CARTRIDGE */
-
-        __dma_queue_init();
 
         __vdp_init();
         __dbgio_init();

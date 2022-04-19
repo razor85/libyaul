@@ -15,22 +15,26 @@
 #include <cpu/dmac.h>
 #include <cpu/intc.h>
 
+#include <dbgio/dbgio.h>
+
 #include <vdp.h>
 
 #include <sys/dma-queue.h>
 
 #include <internal.h>
+#include <dbgio/dbgio-internal.h>
+#include <vdp-internal.h>
 
 #include "cons/cons.h"
 
 #include "vdp2_font.inc"
 
-#define STATE_IDLE                      (0x00)
-#define STATE_INITIALIZED               (0x01)
-#define STATE_BUFFER_DIRTY              (0x02)
-#define STATE_BUFFER_CLEARED            (0x04)
-#define STATE_BUFFER_FLUSHING           (0x08)
-#define STATE_BUFFER_FORCE_FLUSHING     (0x10)
+#define STATE_IDLE                  (0x00)
+#define STATE_INITIALIZED           (0x01)
+#define STATE_BUFFER_DIRTY          (0x02)
+#define STATE_BUFFER_CLEARED        (0x04)
+#define STATE_BUFFER_FLUSHING       (0x08)
+#define STATE_BUFFER_FORCE_FLUSHING (0x10)
 
 /* CPU-DMAC channel used for _flush() and _buffer_clear() */
 #define DEV_DMAC_CHANNEL 0
@@ -370,7 +374,26 @@ _scroll_screen_reset(void)
         vdp2_scrn_priority_set(params->scroll_screen, 7);
         vdp2_scrn_scroll_x_set(params->scroll_screen, FIX16(0.0f));
         vdp2_scrn_scroll_y_set(params->scroll_screen, FIX16(0.0f));
-        vdp2_scrn_display_set(params->scroll_screen, /* transparent = */ true);
+
+        vdp2_scrn_disp_t disp_mask;
+
+        switch (params->scroll_screen) {
+        case VDP2_SCRN_NBG1:
+                disp_mask = VDP2_SCRN_NBG1_DISP;
+                break;
+        case VDP2_SCRN_NBG2:
+                disp_mask = VDP2_SCRN_NBG2_DISP;
+                break;
+        case VDP2_SCRN_NBG3:
+                disp_mask = VDP2_SCRN_NBG3_DISP;
+                break;
+        default:
+        case VDP2_SCRN_NBG0:
+                disp_mask = VDP2_SCRN_NBG0_DISP;
+                break;
+        }
+
+        vdp2_scrn_display_set(disp_mask);
 
         vdp2_vram_cycp_bank_set(params->cpd_bank, &params->cpd_cycp);
         vdp2_vram_cycp_bank_set(params->pnd_bank, &params->pnd_cycp);
@@ -392,8 +415,7 @@ _assert_shared_init(const dbgio_vdp2_t *params __unused)
                (params->scroll_screen == VDP2_SCRN_NBG2) ||
                (params->scroll_screen == VDP2_SCRN_NBG3));
 
-        assert((params->scroll_screen != VDP2_SCRN_RBG0) &&
-               (params->scroll_screen != VDP2_SCRN_RBG1));
+        assert((params->scroll_screen != VDP2_SCRN_RBG0));
 
         assert(params->cpd_bank <= 3);
         /* XXX: Fetch the VRAM bank split configuration and determine the VRAM

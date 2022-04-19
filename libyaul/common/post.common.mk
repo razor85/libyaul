@@ -83,7 +83,7 @@ endif
 define macro-generate-sh-build-object
 $2: $1
 	@printf -- "$(V_BEGIN_YELLOW)$1$(V_END)\n"
-	$(ECHO)$(SH_CC) -MF $(addsuffix .d,$(basename $2)) -MD $(SH_CFLAGS) $(foreach specs,$(SH_SPECS),-specs=$(specs)) -c -o $2 $1
+	$(ECHO)$(SH_CC) -MT '$2' -MF $(addsuffix .d,$(basename $2)) -MD $(SH_CFLAGS) $(foreach specs,$(SH_SPECS),-specs=$(specs)) -c -o $2 $1
 	$(ECHO)$(call macro-update-cdb,\
 		$(CDB_GCC),\
 		$(abspath $1),\
@@ -98,7 +98,7 @@ endef
 define macro-generate-sh-build-asm-object
 $2: $1
 	@printf -- "$(V_BEGIN_YELLOW)$1$(V_END)\n"
-	$(ECHO)$(SH_AS) $(SH_AFLAGS) -o $2 $1
+	$(ECHO)$(SH_CC) $(SH_CFLAGS) -c -o $2 $1
 endef
 
 # $1 -> $<
@@ -106,7 +106,7 @@ endef
 define macro-generate-sh-build-c++-object
 $2: $1
 	@printf -- "$(V_BEGIN_YELLOW)$1$(V_END)\n"
-	$(ECHO)$(SH_CXX) -MF $(addsuffix .d,$(basename $2)) -MD $(SH_CXXFLAGS) $(foreach specs,$(SH_SPECS),-specs=$(specs)) -c -o $2 $1
+	$(ECHO)$(SH_CXX) -MT '$2' -MF $(addsuffix .d,$(basename $2)) -MD $(SH_CXXFLAGS) $(foreach specs,$(SH_SPECS),-specs=$(specs)) -c -o $2 $1
 	$(ECHO)$(call macro-update-cdb,\
 		$(CDB_CPP),\
 		$(abspath $1),\
@@ -164,7 +164,7 @@ $(SH_PROGRAM).cue: | $(SH_PROGRAM).iso
 	@printf -- "$(V_BEGIN_YELLOW)$@$(V_END)\n"
 	$(ECHO)$(YAUL_INSTALL_ROOT)/share/wrap-error $(YAUL_INSTALL_ROOT)/bin/make-cue "$(SH_PROGRAM).iso"
 
-$(SH_BUILD_PATH)/IP.BIN: $(YAUL_INSTALL_ROOT)/share/yaul/bootstrap/ip.sx $(SH_BUILD_PATH)/$(SH_PROGRAM).bin
+$(SH_BUILD_PATH)/IP.BIN: $(YAUL_INSTALL_ROOT)/share/yaul/ip/ip.sx $(SH_BUILD_PATH)/$(SH_PROGRAM).bin
 	$(ECHO)$(YAUL_INSTALL_ROOT)/share/wrap-error $(YAUL_INSTALL_ROOT)/bin/make-ip \
 	    "$(SH_BUILD_PATH)/$(SH_PROGRAM).bin" \
 		"$(IP_VERSION)" \
@@ -177,7 +177,7 @@ $(SH_BUILD_PATH)/IP.BIN: $(YAUL_INSTALL_ROOT)/share/yaul/bootstrap/ip.sx $(SH_BU
 		$(IP_1ST_READ_ADDR) \
 	    $(IP_1ST_READ_SIZE)
 
-$(SH_BUILD_PATH)/CART-IP.BIN: $(YAUL_INSTALL_ROOT)/share/yaul/bootstrap/ip.sx $(SH_BUILD_PATH)/$(SH_PROGRAM).bin
+$(SH_BUILD_PATH)/CART-IP.BIN: $(YAUL_INSTALL_ROOT)/share/yaul/ip/ip.sx $(SH_BUILD_PATH)/$(SH_PROGRAM).bin
 	$(ECHO)$(YAUL_INSTALL_ROOT)/share/wrap-error $(YAUL_INSTALL_ROOT)/bin/make-ip \
 	    "$(SH_BUILD_PATH)/$(SH_PROGRAM).bin" \
 		"$(IP_VERSION)" \
