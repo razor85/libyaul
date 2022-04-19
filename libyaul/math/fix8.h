@@ -87,6 +87,25 @@ fix8_mul(const fix8_t a, const fix8_t b)
         return (fix8_t)(out & 0xFFFF);
 }
 
+static inline fix8_32_t __always_inline
+fix8_32_mul(const fix8_t a, const fix8_t b)
+{
+        register int32_t out;
+
+        __asm__ volatile ("\tclrmac\n"
+                          "\tmuls.w %[a], %[b]\n"
+                          "\tsts macl, %[out]\n"
+                          "\tshlr8 %[out]\n"
+            /* Output */
+            : [out] "=&r" (out)
+            /* Input */
+            : [a] "r" (a),
+              [b] "r" (b)
+            : "macl", "memory");
+
+        return out;
+}
+
 static inline fix8_t __always_inline
 fix8_int16_from(int16_t value)
 {

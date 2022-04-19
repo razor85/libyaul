@@ -28,7 +28,7 @@ typedef union fix8_mat3 {
         fix8_t arr[9];
         fix8_t frow[3][3];
         fix8_vec3_t row[3];
-} __packed fix8_mat3_t;
+} __packed __aligned(2) fix8_mat3_t;
 
 extern void fix8_mat3_dup(const fix8_mat3_t *, fix8_mat3_t *);
 extern void fix8_mat3_identity(fix8_mat3_t *);
