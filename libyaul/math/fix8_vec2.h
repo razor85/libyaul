@@ -26,7 +26,7 @@ typedef union fix8_vec2 {
         };
 
         fix8_t comp[2];
-} __packed __aligned(4) fix8_vec2_t;
+} __packed __aligned(2) fix8_vec2_t;
 
 static inline void __always_inline
 fix8_vec2_zero(fix8_vec2_t *result)
@@ -77,41 +77,55 @@ fix8_vec2_scaled(const fix8_t scalar, const fix8_vec2_t * __restrict v0,
 static inline fix8_t __always_inline
 fix8_vec2_inline_dot(const fix8_vec2_t *a, const fix8_vec2_t *b)
 {
-        register uint32_t aux;
+        register uint32_t out;
 
         __asm__ volatile ("\tclrmac\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
-                          "\tsts macl, %[aux]\n"
-                          "\tshlr8 %[aux]\n"
+                          "\tsts macl, %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
             : [a] "+r" (a),
               [b] "+r" (b),
-              [aux] "=&r" (aux)
+              [out] "=&r" (out)
             : "m" (*a),
               "m" (*b)
-            : "macl", "memory");
+            : "mach", "macl", "memory");
 
-        return (fix8_t)(aux & 0xFFFF);
+        return (fix8_t)(out & 0xFFFF);
 }
 
 static inline fix8_32_t __always_inline
 fix8_vec2_inline_dot_precise(const fix8_vec2_t *a, const fix8_vec2_t *b)
 {
-        register uint32_t aux;
+        register uint32_t out;
 
         __asm__ volatile ("\tclrmac\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
-                          "\tsts macl, %[aux]\n"
-                          "\tshlr8 %[aux]\n"
+                          "\tsts macl, %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
             : [a] "+r" (a),
               [b] "+r" (b),
-              [aux] "=&r" (aux)
+              [out] "=&r" (out)
             : "m" (*a),
               "m" (*b)
-            : "macl", "memory");
+            : "mach", "macl", "memory");
 
-        return aux;
+        return out;
 }
 
 extern fix8_t fix8_vec2_length(const fix8_vec2_t *);

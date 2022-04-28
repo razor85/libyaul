@@ -66,7 +66,6 @@ typedef int32_t fix8_32_t;
 #define FIX8_ONE       (fix8_t)(0x0100)
 #define FIX8_ZERO      (fix8_t)(0x0000)
 #define FIX8_RAD2DEG   (fix8_t)(0x394C)
-#define FIX8_DEG2RAD   (fix8_t)(0x0004)
 
 static inline fix8_t __always_inline
 fix8_mul(const fix8_t a, const fix8_t b)
@@ -76,7 +75,14 @@ fix8_mul(const fix8_t a, const fix8_t b)
         __asm__ volatile ("\tclrmac\n"
                           "\tmuls.w %[a], %[b]\n"
                           "\tsts macl, %[out]\n"
-                          "\tshlr8 %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
             /* Output */
             : [out] "=&r" (out)
             /* Input */
@@ -95,7 +101,14 @@ fix8_32_mul(const fix8_t a, const fix8_t b)
         __asm__ volatile ("\tclrmac\n"
                           "\tmuls.w %[a], %[b]\n"
                           "\tsts macl, %[out]\n"
-                          "\tshlr8 %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
             /* Output */
             : [out] "=&r" (out)
             /* Input */
@@ -182,16 +195,22 @@ fix8_clamp(fix8_t value, fix8_t value_low, fix8_t value_high)
         return fix8_min(fix8_max(value, value_low), value_high);
 }
 
-static inline fix8_t __always_inline
+static inline int16_t __always_inline
 fix8_rad_deg_to(fix8_t radians)
 {
-        return fix8_mul(radians, FIX8_RAD2DEG);
+        return fix8_32_mul(radians, FIX8_RAD2DEG);
 }
 
 static inline fix8_t __always_inline
-fix8_deg_rad_to(fix8_t degrees)
+fix8_deg_rad_to(int16_t degrees)
 {
-        return fix8_mul(degrees, FIX8_DEG2RAD);
+        // We don't have enough precision to do it in fix8
+        // as our maximum value is [-128, 127] so we cheat
+        // and do with int's:
+        // rad_fix16 = angle * 3.1415 * 256 (to fix8) * 256 (to fix16) / 180
+        // rad_fix16 = angle * 1143.78 (1144)
+        // rad_fix8 = rad_fix16 >> 8
+        return (degrees * 1144) >> 8;
 }
 
 extern fix8_t fix8_overflow_add(const fix8_t, const fix8_t) FIXMATH_FUNC_ATTRS;

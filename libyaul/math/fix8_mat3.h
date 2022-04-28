@@ -15,8 +15,6 @@ union fix8_vec3;
 
 typedef union fix8_vec3 fix8_vec3_t;
 
-// TODO: Romulo - aligned to 4?
-
 /* Row-major matrix */
 typedef union fix8_mat3 {
         struct {

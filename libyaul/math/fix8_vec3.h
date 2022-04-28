@@ -20,7 +20,6 @@
             }                                                                 \
     }
 
-// TODO: Romulo - align on 4 bytes? Don't think so.
 typedef union fix8_vec3 {
         struct {
                 fix8_t x;
@@ -29,7 +28,7 @@ typedef union fix8_vec3 {
         };
 
         fix8_t comp[3];
-} __packed fix8_vec3_t;
+} __packed __aligned(2) fix8_vec3_t;
 
 static inline void __always_inline
 fix8_vec3_zero(fix8_vec3_t *result)
@@ -94,43 +93,57 @@ fix8_vec3_scaled(const fix8_t scalar, const fix8_vec3_t * __restrict v,
 static inline fix8_t __always_inline
 fix8_vec3_inline_dot(const fix8_vec3_t *a, const fix8_vec3_t *b)
 {
-        register uint32_t aux;
+        register uint32_t out;
 
         __asm__ volatile ("\tclrmac\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
-                          "\tsts macl, %[aux]\n"
-                          "\tshlr8 %[aux]\n"
+                          "\tsts macl, %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
             : [a] "+r" (a),
               [b] "+r" (b),
-              [aux] "=&r" (aux)
+              [out] "=&r" (out)
             : "m" (*a),
               "m" (*b)
-            : "macl", "memory");
+            : "mach", "macl", "memory");
 
-        return (fix8_t)(aux & 0xFFFF);
+        return (fix8_t)(out & 0xFFFF);
 }
 
 static inline fix8_32_t __always_inline
 fix8_32_vec3_inline_dot_precise(const fix8_vec3_t *a, const fix8_vec3_t *b)
 {
-        register uint32_t aux;
+        register uint32_t out;
 
         __asm__ volatile ("\tclrmac\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
                           "\tmac.w @%[a]+, @%[b]+\n"
-                          "\tsts macl, %[aux]\n"
-                          "\tshlr8 %[aux]\n"
+                          "\tsts macl, %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
+                          "\tshar %[out]\n"
             : [a] "+r" (a),
               [b] "+r" (b),
-              [aux] "=&r" (aux)
+              [out] "=&r" (out)
             : "m" (*a),
               "m" (*b)
-            : "macl", "memory");
+            : "mach", "macl", "memory");
 
-        return aux;
+        return out;
 }
 
 extern fix8_t fix8_vec3_length(const fix8_vec3_t *);
