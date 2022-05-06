@@ -13,12 +13,6 @@
 
 #include <sys/cdefs.h>
 
-#if HAVE_DEV_CARTRIDGE == 1 /* USB flash cartridge */
-#include <usb-cart-internal.h>
-#elif HAVE_DEV_CARTRIDGE == 2 /* Datel Action Replay cartridge */
-#include <arp.h>
-#endif /* HAVE_DEV_CARTRIDGE */
-
 #include <mm/tlsf.h>
 
 struct state {
@@ -58,5 +52,7 @@ void *__malloc(size_t n);
 void *__realloc(void *p, size_t n);
 void *__memalign(size_t n, size_t align);
 void __free(void *p);
+
+void __atexit_init(void);
 
 #endif /* !_KERNEL_INTERNAL_H_ */

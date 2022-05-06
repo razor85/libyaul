@@ -55,14 +55,6 @@ ifneq ($(YAUL_CDB),$(filter $(YAUL_CDB),0 1))
   $(error Invalid value for YAUL_CDB (update JSON compile command database))
 endif
 
-# Check options
-ifeq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),)
-  $(error Undefined YAUL_OPTION_DEV_CARTRIDGE (development cartridge))
-endif
-ifneq ($(YAUL_OPTION_DEV_CARTRIDGE),$(filter $(YAUL_OPTION_DEV_CARTRIDGE),0 1 2))
-  $(error Invalid value for YAUL_OPTION_DEV_CARTRIDGE (development cartridge))
-endif
-
 ifneq (1,$(words [$(strip $(YAUL_OPTION_MALLOC_IMPL))]))
   $(error YAUL_OPTION_MALLOC_IMPL (malloc implementation) contains spaces)
 endif
@@ -82,13 +74,6 @@ ifeq ($(strip $(YAUL_OPTION_BUILD_ASSERT)),)
 endif
 ifneq ($(YAUL_OPTION_BUILD_ASSERT),$(filter $(YAUL_OPTION_BUILD_ASSERT),0 1))
   $(error Invalid value for YAUL_OPTION_BUILD_ASSERT (build assert))
-endif
-
-ifeq ($(strip $(YAUL_OPTION_SPIN_ON_ABORT)),)
-  $(error Undefined YAUL_OPTION_SPIN_ON_ABORT (spin on calling abort()))
-endif
-ifneq ($(YAUL_OPTION_SPIN_ON_ABORT),$(filter $(YAUL_OPTION_SPIN_ON_ABORT),0 1))
-  $(error Invalid value for YAUL_OPTION_SPIN_ON_ABORT (spin on calling abort()))
 endif
 
 ifeq ($(OS),Windows_NT)
@@ -117,7 +102,9 @@ SH_OBJCOPY:= $(YAUL_INSTALL_ROOT)/bin/$(YAUL_PROG_SH_PREFIX)-objcopy$(EXE_EXT)
 SH_OBJDUMP:= $(YAUL_INSTALL_ROOT)/bin/$(YAUL_PROG_SH_PREFIX)-objdump$(EXE_EXT)
 
 SH_CFLAGS_shared:= \
-	-ggdb3 \
+	-flto \
+	-ffunction-sections \
+	-fdata-sections \
 	-pedantic \
 	-s \
 	-ffreestanding \
@@ -138,18 +125,11 @@ SH_CFLAGS_shared:= \
 	-Wnull-dereference \
 	-Wshadow \
 	-Wunused \
-	-DHAVE_DEV_CARTRIDGE=$(YAUL_OPTION_DEV_CARTRIDGE) \
-	-DHAVE_GDB_SUPPORT=$(YAUL_OPTION_BUILD_GDB) \
 	-DHAVE_ASSERT_SUPPORT=$(YAUL_OPTION_BUILD_ASSERT)
 
 ifeq ($(strip $(YAUL_OPTION_MALLOC_IMPL)),tlsf)
 SH_CFLAGS_shared += \
 	-DMALLOC_IMPL_TLSF
-endif
-
-ifeq ($(strip $(YAUL_OPTION_SPIN_ON_ABORT)),1)
-SH_CFLAGS_shared += \
-	-DSPIN_ON_ABORT=1
 endif
 
 SH_CFLAGS:= \
@@ -170,7 +150,7 @@ SH_CXXFLAGS:= \
 	$(SH_CXXFLAGS_shared)
 
 SH_CFLAGS_shared_release:= -Os -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables
-SH_CFLAGS_shared_debug:= -Og -DDEBUG
+SH_CFLAGS_shared_debug:= -Og -g -DDEBUG
 
 SH_CFLAGS_release:= $(SH_CFLAGS_shared_release) $(SH_CFLAGS)
 SH_CFLAGS_debug:= $(SH_CFLAGS_shared_debug) $(SH_CFLAGS)
@@ -247,7 +227,7 @@ endif
 define macro-sh-build-object
 	@printf -- "$(V_BEGIN_YELLOW)$(shell v="$@"; printf -- "$${v#$(YAUL_BUILD_ROOT)/}")$(V_END)\n"
 	$(ECHO)mkdir -p $(@D)
-	$(ECHO)$(SH_CC) -MF $(YAUL_BUILD_ROOT)/$(SUB_BUILD)/$1/$*.d -MD $(SH_CFLAGS_$1) \
+	$(ECHO)$(SH_CC) -MT $(@) -MF $(YAUL_BUILD_ROOT)/$(SUB_BUILD)/$1/$*.d -MD $(SH_CFLAGS_$1) \
 		$(foreach dir,$(SHARED_INCLUDE_DIRS),-I$(abspath $(dir))) \
 		-c -o $@ $(abspath $(<))
 	$(ECHO)$(call macro-update-cdb,\
@@ -263,7 +243,7 @@ endef
 define macro-sh-build-c++-object
 	@printf -- "$(V_BEGIN_YELLOW)$(shell v="$@"; printf -- "$${v#$(YAUL_BUILD_ROOT)/}")$(V_END)\n"
 	$(ECHO)mkdir -p $(@D)
-	$(ECHO)$(SH_CXX) -MF $(YAUL_BUILD_ROOT)/$(SUB_BUILD)/$1/$*.d -MD $(SH_CXXFLAGS_$1) \
+	$(ECHO)$(SH_CXX) -MT $(@) -MF $(YAUL_BUILD_ROOT)/$(SUB_BUILD)/$1/$*.d -MD $(SH_CXXFLAGS_$1) \
 		$(foreach dir,$(SHARED_INCLUDE_DIRS),-I$(abspath $(dir))) \
 		-o $@ -c $(abspath $(<))
 	$(ECHO)$(call macro-update-cdb,\

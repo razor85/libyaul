@@ -1,9 +1,5 @@
 # -*- mode: makefile -*-
 
-FLAG_BUILD_GDB:= $(shell test "x$(YAUL_OPTION_DEV_CARTRIDGE)" != x0 -a \
-                              \( "x$(TYPE)" = xdebug -o \
-                                 "x$(YAUL_OPTION_BUILD_GDB)" != x0 \) && printf "yes")
-
 IP_FILES:= \
 	ip/ip.sx \
 	ip/blobs/sys_aree.bin \
@@ -28,6 +24,7 @@ LDSCRIPTS:= \
 SPECS:= \
 	common/specs/yaul.specs \
 	common/specs/yaul-main.specs \
+	common/specs/yaul-main-c++.specs \
 	common/specs/ip.specs
 
 SUPPORT_SRCS:= \
@@ -44,11 +41,9 @@ LIB_SRCS:= \
 	kernel/mm/internal.c \
 	common/reset-internal.c
 
-ifeq ($(strip $(FLAG_BUILD_GDB)),yes)
 LIB_SRCS+= \
 	gdb/gdb.c \
 	gdb/gdb-ihr.sx
-endif
 
 LIB_SRCS+= \
 	kernel/dbgio/dbgio.c \
@@ -56,10 +51,8 @@ LIB_SRCS+= \
 	kernel/dbgio/devices/vdp1.c \
 	kernel/dbgio/devices/vdp2.c \
 
-ifeq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),1)
 LIB_SRCS+= \
 	kernel/dbgio/devices/usb-cart.c
-endif
 
 LIB_SRCS+= \
 	kernel/dbgio/devices/cons/cons.c \
@@ -78,9 +71,13 @@ LIB_SRCS+= \
 	kernel/mm/tlsf.c
 
 LIB_SRCS+= \
-	lib/ctype/ctype.c \
+	lib/ctype/ctype.c
+
+LIB_SRCS+= \
 	lib/errno/strerror.c \
 	lib/errno/__errno_location.c \
+
+LIB_SRCS+= \
 	lib/string/bcmp.c \
 	lib/string/bcopy.c \
 	lib/string/bzero.c \
@@ -123,7 +120,9 @@ LIB_SRCS+= \
 	lib/string/strtok.c \
 	lib/string/strtok_r.c \
 	lib/string/strverscmp.c \
-	lib/string/swab.c \
+	lib/string/swab.c
+
+LIB_SRCS+= \
 	lib/stdio/clearerr.c \
 	lib/stdio/stdio.c \
     lib/stdio/fclose.c \
@@ -164,16 +163,16 @@ LIB_SRCS+= \
     lib/stdio/vfprintf.c \
     lib/stdio/vprintf.c \
     lib/stdio/vsnprintf.c \
-    lib/stdio/vsprintf.c \
-	lib/stdlib/abort.c \
-	lib/stdlib/abs.c
-
-ifeq ($(strip $(YAUL_OPTION_BUILD_ASSERT)),1)
-LIB_SRCS+= \
-	lib/stdlib/assert.c
-endif
+    lib/stdio/vsprintf.c
 
 LIB_SRCS+= \
+	lib/exit/abort.c \
+	lib/exit/assert.c \
+	lib/exit/atexit.c \
+	lib/exit/exit.c
+
+LIB_SRCS+= \
+	lib/stdlib/abs.c \
 	lib/stdlib/atoi.c \
 	lib/stdlib/atol.c \
 	lib/stdlib/free.c \
@@ -190,23 +189,17 @@ LIB_SRCS+= \
 	kernel/fs/cd/cdfs.c \
 	kernel/fs/cd/cdfs_sector_read.c
 
-ifneq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),0)
 LIB_SRCS+= \
 	kernel/fs/cd/cdfs_sector_usb_cart_read.c
-endif
 
-ifeq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),2)
 LIB_SRCS+= \
 	scu/bus/a/cs0/arp/arp.c
-endif
 
 LIB_SRCS+= \
 	scu/bus/a/cs0/dram-cart/dram-cart.c
 
-ifeq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),1)
 LIB_SRCS+= \
 	scu/bus/a/cs0/usb-cart/usb-cart.c
-endif
 
 LIB_SRCS+= \
 	math/color.c \
@@ -345,10 +338,8 @@ INSTALL_HEADER_FILES+= \
 INSTALL_HEADER_FILES+= \
 	./ip/:ip.h:yaul/ip/
 
-ifeq ($(strip $(FLAG_BUILD_GDB)),yes)
 INSTALL_HEADER_FILES+= \
 	./gdb/:gdb.h:yaul/gdb/
-endif
 
 INSTALL_HEADER_FILES+= \
 	./kernel/dbgio/:dbgio.h:yaul/dbgio/
@@ -389,17 +380,13 @@ INSTALL_HEADER_FILES+= \
 	./scu/bus/a/cs0/dram-cart/:dram-cart.h:yaul/scu/bus/a/cs0/dram-cart/ \
 	./scu/bus/a/cs0/dram-cart/:dram-cart/map.h:yaul/scu/bus/a/cs0/dram-cart/
 
-ifeq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),2)
 INSTALL_HEADER_FILES+= \
 	./scu/bus/a/cs0/arp/:arp.h:yaul/scu/bus/a/cs0/arp/ \
 	./scu/bus/a/cs0/arp/arp/:map.h:yaul/scu/bus/a/cs0/arp/arp/
-endif
 
-ifeq ($(strip $(YAUL_OPTION_DEV_CARTRIDGE)),1)
 INSTALL_HEADER_FILES+= \
 	./scu/bus/a/cs0/usb-cart/:usb-cart.h:yaul/scu/bus/a/cs0/usb-cart/ \
 	./scu/bus/a/cs0/usb-cart/usb-cart/:map.h:yaul/scu/bus/a/cs0/usb-cart/usb-cart/
-endif
 
 INSTALL_HEADER_FILES+= \
 	./scu/bus/b/scsp/:scsp.h:yaul/scu/bus/b/scsp/ \
