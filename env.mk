@@ -62,20 +62,6 @@ ifneq ($(YAUL_OPTION_MALLOC_IMPL),$(filter $(YAUL_OPTION_MALLOC_IMPL),tlsf))
   $(error Invalid value for YAUL_OPTION_MALLOC_IMPL (malloc implementation))
 endif
 
-ifeq ($(strip $(YAUL_OPTION_BUILD_GDB)),)
-  $(error Undefined YAUL_OPTION_BUILD_GDB (build GDB))
-endif
-ifneq ($(YAUL_OPTION_BUILD_GDB),$(filter $(YAUL_OPTION_BUILD_GDB),0 1))
-  $(error Invalid value for YAUL_OPTION_BUILD_GDB (build GDB))
-endif
-
-ifeq ($(strip $(YAUL_OPTION_BUILD_ASSERT)),)
-  $(error Undefined YAUL_OPTION_BUILD_ASSERT (build ASSERT))
-endif
-ifneq ($(YAUL_OPTION_BUILD_ASSERT),$(filter $(YAUL_OPTION_BUILD_ASSERT),0 1))
-  $(error Invalid value for YAUL_OPTION_BUILD_ASSERT (build assert))
-endif
-
 ifeq ($(OS),Windows_NT)
 EXE_EXT:= .exe
 endif
@@ -124,8 +110,7 @@ SH_CFLAGS_shared:= \
 	-Wno-format \
 	-Wnull-dereference \
 	-Wshadow \
-	-Wunused \
-	-DHAVE_ASSERT_SUPPORT=$(YAUL_OPTION_BUILD_ASSERT)
+	-Wunused
 
 ifeq ($(strip $(YAUL_OPTION_MALLOC_IMPL)),tlsf)
 SH_CFLAGS_shared += \
@@ -169,6 +154,7 @@ SHARED_INCLUDE_DIRS:= \
 	../lib$(MAIN_TARGET)/scu \
 	../lib$(MAIN_TARGET)/scu/bus/a/cs0/arp \
 	../lib$(MAIN_TARGET)/scu/bus/a/cs0/dram-cart \
+	../lib$(MAIN_TARGET)/scu/bus/a/cs0/flash \
 	../lib$(MAIN_TARGET)/scu/bus/a/cs0/usb-cart \
 	../lib$(MAIN_TARGET)/scu/bus/a/cs2/cd-block \
 	../lib$(MAIN_TARGET)/scu/bus/b/scsp \
