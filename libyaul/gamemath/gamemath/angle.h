@@ -77,13 +77,17 @@ struct angle_t {
     inline bool operator==(angle_t other) const;
     inline bool operator==(int32_t other) const;
 
+    inline fix16_t to_rad() const;
+
+    inline fix16_t to_deg() const;
+
     static constexpr inline angle_t from_rad_double(double rad);
 
     static constexpr inline angle_t from_deg_double(double value);
 
-    inline angle_t from_deg(fix16_t degree);
+    static inline angle_t from_deg(fix16_t degree);
 
-    inline angle_t from_rad(fix16_t rad);
+    static inline angle_t from_rad(fix16_t rad);
 
     inline size_t to_string(char* buffer, int32_t decimals = 7) const;
 };
@@ -184,6 +188,15 @@ inline angle_t angle_t::from_rad(fix16_t rad) {
 
     // Drop the fractional part of the fixed value
     return angle_t{fix16_low_mul(scale, rad)};
+}
+
+inline fix16_t angle_t::to_rad() const {
+    static const fix16_t toRadians = fix16_t::from_double(2.0 * M_PI);
+    return fix16_t(static_cast<int32_t>(value) * toRadians.value);
+}
+
+inline fix16_t angle_t::to_deg() const {
+    return fix16_t(static_cast<int32_t>(value) * 360);
 }
 
 constexpr inline angle_t angle_t::from_rad_double(double rad) {
