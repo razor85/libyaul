@@ -22,7 +22,6 @@
 /// @ingroup MATH
 /// @{
 
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 ///
 /// @param d Not yet documented.
@@ -32,9 +31,7 @@
 ///
 /// @param d Not yet documented.
 #define DEG2ANGLE(d) ((angle_t)((65536.0 * (d)) / 360.0))
-#endif /* !__cplusplus */
 
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 typedef int16_t angle_t;
 
@@ -46,66 +43,8 @@ typedef struct euler {
     angle_t yaw;
     /// @brief Not yet documented.
     angle_t roll;
-} euler_t;
-#else
-/// @brief Not yet documented.
-struct angle_t {
-    /// @brief Not yet documented.
-    int16_t value;
+} __packed __aligned(2) euler_t;
 
-    angle_t() = default;
-
-    explicit constexpr angle_t(int32_t v);
-
-    inline angle_t operator+(angle_t other) const;
-    inline angle_t operator-(angle_t other) const;
-    constexpr inline angle_t operator-() const;
-    inline angle_t operator>>(int32_t other) const;
-    inline angle_t operator<<(int32_t other) const;
-
-    inline angle_t& operator+=(angle_t rhs);
-    inline angle_t& operator-=(angle_t rhs);
-
-    inline bool operator<(angle_t other) const;
-    inline bool operator<(int32_t other) const;
-    inline bool operator>(angle_t other) const;
-    inline bool operator>(int32_t other) const;
-    inline bool operator<=(angle_t other) const;
-    inline bool operator<=(int32_t other) const;
-    inline bool operator>=(angle_t other) const;
-    inline bool operator>=(int32_t other) const;
-    inline bool operator==(angle_t other) const;
-    inline bool operator==(int32_t other) const;
-
-    inline fix16_t to_rad() const;
-
-    inline fix16_t to_deg() const;
-
-    static constexpr inline angle_t from_rad_double(double rad);
-
-    static constexpr inline angle_t from_deg_double(double value);
-
-    static inline angle_t from_deg(fix16_t degree);
-
-    static inline angle_t from_rad(fix16_t rad);
-
-    inline size_t to_string(char* buffer, int32_t decimals = 7) const;
-};
-
-static_assert(sizeof(angle_t) == 2);
-
-/// @brief Not yet documented.
-struct euler_t {
-    /// @brief Not yet documented.
-    angle_t pitch;
-    /// @brief Not yet documented.
-    angle_t yaw;
-    /// @brief Not yet documented.
-    angle_t roll;
-};
-#endif /* !__cplusplus */
-
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 ///
 /// @param angle Not yet documented.
@@ -133,83 +72,172 @@ angle_int32_to(angle_t angle)
 {
     return (angle <= SHRT_MIN) ? (uint16_t)angle : angle;
 }
-#else
-constexpr angle_t operator"" _deg(long double v) { return angle_t::from_deg_double(v); }
 
-constexpr angle_t operator"" _rad(long double v) { return angle_t::from_rad_double(v); }
+#if defined(__cplusplus)
 
-constexpr angle_t::angle_t(int32_t v) : value(v) {}
+__BEGIN_DECLS
 
-inline angle_t angle_t::operator+(angle_t other) const { return angle_t{value + other.value}; }
-inline angle_t angle_t::operator-(angle_t other) const { return angle_t{value - other.value}; }
+extern fix16_t fix16_cos(angle_t);
 
-constexpr inline angle_t angle_t::operator-() const {
-    return angle_t{-value};
+extern fix16_t fix16_sin(angle_t);
+
+extern fix16_t fix16_tan(angle_t);
+
+extern void fix16_sincos(angle_t, fix16_t *, fix16_t *);
+
+__END_DECLS
+
+namespace yaul {
+
+/// @brief Not yet documented.
+struct __packed angle {
+    /// @brief Not yet documented.
+    angle_t value;
+
+    angle() = default;
+    
+    constexpr explicit angle(angle_t v) : value(v) {}
+
+    angle operator+(angle other) const
+    {
+        return angle{ static_cast<angle_t>(value + other.value) };
+    }
+
+    inline angle operator-(angle other) const
+    {
+        return angle { static_cast<angle_t>(value - other.value) };
+    }
+
+    constexpr angle operator-() const { return angle { static_cast<angle_t>(-value) }; }
+
+    angle operator>>(int32_t other) const
+    {
+        return angle { static_cast<angle_t>((value <= SHRT_MIN) ?
+                (static_cast<uint16_t>(value) >> other) :
+                (value >> other)) };
+    }
+
+    angle operator<<(int32_t other) const
+    {
+        return angle { static_cast<angle_t>((value <= SHRT_MIN) ?
+                (static_cast<int32_t>(value & 0xFFFF) << other) :
+                (value << other)) };
+    }
+
+    angle &operator+=(angle rhs)
+    {
+        value += rhs.value;
+        return *this;
+    }
+
+    angle &operator-=(angle rhs)
+    {
+        value -= rhs.value;
+        return *this;
+    }
+
+    bool operator<(angle other) const { return value < other.value; }
+    bool operator>(angle other) const { return value > other.value; }
+    bool operator<=(angle other) const { return value <= other.value; }
+    bool operator>=(angle other) const { return value >= other.value; }
+    bool operator==(angle other) const { return value == other.value; }
+
+    bool operator<(int32_t other) const { return value < other; }
+    bool operator>(int32_t other) const { return value > other; }
+    bool operator<=(int32_t other) const { return value <= other; }
+    bool operator>=(int32_t other) const { return value >= other; }
+    bool operator==(int32_t other) const { return value == other; }
+
+    angle from_deg(fix16 degree)
+    {
+        constexpr fix16 scale { fix16::from_double(1.0 / 360.0) };
+        return angle { static_cast<int16_t>((scale * degree).value) };
+    }
+
+    angle from_rad(fix16 rad)
+    {
+        constexpr fix16 scale { fix16::from_double(1.0 / (2.0 * M_PI)) };
+        return angle { static_cast<int16_t>((scale * rad).value) };
+    }
+
+    fix16 to_rad() const
+    {
+        constexpr fix16 toRadians = fix16::from_double(2.0 * M_PI);
+        return fix16(static_cast<int32_t>(value)) * toRadians;
+    }
+
+    fix16 to_deg() const
+    {
+        constexpr fix16 toDeg = fix16::from_double(360.0);
+        return fix16(static_cast<int32_t>(value)) * toDeg;
+    }
+
+    fix16 cos() const { return fix16{::fix16_cos(value)}; }
+
+    fix16 sin() const { return fix16{::fix16_sin(value)}; }
+
+    fix16 tan() const { return fix16{::fix16_tan(value)}; }
+    
+    void sincos(fix16_t &out_sin, fix16_t &out_cos) const
+    {
+        fix16_sincos(value, &out_sin, &out_cos);
+    }
+
+    void sincos(fix16 &out_sin, fix16 &out_cos) const
+    {
+        fix16_sincos(value, &out_sin.value, &out_cos.value);
+    }
+
+    static constexpr angle from_rad_double(double rad)
+    {
+        constexpr double _2pi = 2.0 * M_PI;
+        return angle {
+            fix16::from_double(fmod(rad + _2pi, _2pi) / _2pi).fractional()
+        };
+    }
+
+    static constexpr angle from_deg_double(double value)
+    {
+        return angle {
+            fix16::from_double(fmod(value + 360.0, 360.0) / 360.0).fractional()
+        };
+    }
+
+    size_t to_string(char *buffer, int32_t decimals) const
+    {
+        return fix16 { static_cast<int32_t>(value) }.to_string(buffer,
+            decimals);
+    }
+};
+
+static_assert(sizeof(angle) == sizeof(::angle_t));
+
+/// @brief Not yet documented.
+struct __packed __aligned(2) euler {
+    /// @brief Not yet documented.
+    angle pitch;
+    /// @brief Not yet documented.
+    angle yaw;
+    /// @brief Not yet documented.
+    angle roll;
+};
+
+static_assert(sizeof(euler) == sizeof(::euler_t));
+
+} // namespace yaul
+
+constexpr yaul::angle
+operator"" _deg(long double v)
+{
+    return yaul::angle::from_deg_double(v);
 }
 
-inline angle_t angle_t::operator>>(int32_t other) const {
-    return angle_t{(value <= SHRT_MIN) ? (static_cast<uint16_t>(value) >> other) : (value >> other)};
+constexpr yaul::angle
+operator"" _rad(long double v)
+{
+    return yaul::angle::from_rad_double(v);
 }
 
-inline angle_t angle_t::operator<<(int32_t other) const {
-    return angle_t{(value <= SHRT_MIN) ? (static_cast<int32_t>(value & 0xFFFF) << other) : (value << other)};
-}
-
-inline angle_t& angle_t::operator+=(angle_t rhs) {
-    *this += rhs;
-    return *this;
-}
-
-inline angle_t& angle_t::operator-=(angle_t rhs) {
-    *this -= rhs;
-    return *this;
-}
-
-inline bool angle_t::operator<(angle_t other) const { return value < other.value; }
-inline bool angle_t::operator<(int32_t other) const { return value < other; }
-inline bool angle_t::operator>(angle_t other) const { return value > other.value; }
-inline bool angle_t::operator>(int32_t other) const { return value > other; }
-inline bool angle_t::operator<=(angle_t other) const { return value <= other.value; }
-inline bool angle_t::operator<=(int32_t other) const { return value <= other; }
-inline bool angle_t::operator>=(angle_t other) const { return value >= other.value; }
-inline bool angle_t::operator>=(int32_t other) const { return value >= other; }
-inline bool angle_t::operator==(angle_t other) const { return value == other.value; }
-inline bool angle_t::operator==(int32_t other) const { return value == other; }
-
-inline angle_t angle_t::from_deg(fix16_t degree) {
-    constexpr fix16_t scale{fix16_t::from_double(1.0 / 360.0)};
-
-    // Drop the fractional part of the fixed value
-    return angle_t{fix16_low_mul(scale, degree)};
-}
-
-inline angle_t angle_t::from_rad(fix16_t rad) {
-    constexpr fix16_t scale{fix16_t::from_double(1.0 / M_PI)};
-
-    // Drop the fractional part of the fixed value
-    return angle_t{fix16_low_mul(scale, rad)};
-}
-
-inline fix16_t angle_t::to_rad() const {
-    static const fix16_t toRadians = fix16_t::from_double(2.0 * M_PI);
-    return fix16_t(static_cast<int32_t>(value) * toRadians.value);
-}
-
-inline fix16_t angle_t::to_deg() const {
-    return fix16_t(static_cast<int32_t>(value) * 360);
-}
-
-constexpr inline angle_t angle_t::from_rad_double(double rad) {
-    constexpr double _2pi = 2.0 * M_PI;
-
-    return angle_t{fix16_t::from_double(fmod(rad + _2pi, _2pi) / _2pi).fractional()};
-}
-
-constexpr inline angle_t angle_t::from_deg_double(double value) {
-    return angle_t{fix16_t::from_double(fmod(value + 360.0, 360.0) / 360.0).fractional()};
-}
-
-inline size_t angle_t::to_string(char* buffer, int32_t decimals) const { return fix16_t{(uint32_t)value}.to_string(buffer, decimals); }
 #endif /* !__cplusplus */
 
 /// @}

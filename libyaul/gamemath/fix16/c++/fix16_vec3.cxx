@@ -1,22 +1,18 @@
 #include <gamemath/fix16/fix16_vec3.h>
+#include <gamemath/fix16/fix16_quat.h>
 
-bool fix16_vec3_t::is_near_zero(fix16_t epsilon) const {
-    // TODO: Implement this in C and use it here
-    return x.is_near_zero(epsilon) && y.is_near_zero(epsilon) && z.is_near_zero(epsilon);
+#if defined(__cplusplus)
+
+namespace yaul {
+
+const fix16_vec3 fix16_vec3::operator*(const fix16_quat &other) const
+{
+    fix16_vec3_t result;
+    fix16_quat_vec3_mul(other.as_fix16_quat_t(), as_fix16_vec3_t(), &result);
+
+    return fix16_vec3 { result.x, result.y, result.z };
 }
 
-void fix16_vec3_t::end_normalization() {
-    const fix16_t scale = fix16_t{cpu_divu_quotient_get()};
+} // namespace yaul
 
-    x = fix16_mul(scale, x);
-    y = fix16_mul(scale, y);
-    z = fix16_mul(scale, z);
-}
-
-fix16_vec3_t fix16_vec3_t::reflect(const fix16_vec3_t& v, const fix16_vec3_t& normal) {
-    // TODO: Move this to a C function
-    const fix16_t factor = dot_product(v, normal) << 1;
-    const fix16_vec3_t proj = normal * factor;
-
-    return (v - proj);
-}
+#endif /* __cplusplus */

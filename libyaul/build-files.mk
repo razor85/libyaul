@@ -219,6 +219,7 @@ LIB_SRCS+= \
 	gamemath/fix16/fix16_vec2.c \
 	gamemath/fix16/fix16_vec3.c \
 \
+	gamemath/fix16/c++/fix16.cxx \
 	gamemath/fix16/c++/fix16_vec3.cxx \
 \
 	gamemath/int16.c \
