@@ -18,7 +18,6 @@
 /// @ingroup MATH_FIX16_VECTOR
 /// @{
 
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 ///
 /// @param x Not yet documented.
@@ -42,9 +41,7 @@
     FIX16(y),                                                                  \
     FIX16(z)                                                                   \
 })
-#endif /* !__cplusplus */
 
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 typedef struct fix16_vec3 {
     /// @brief Not yet documented.
@@ -53,81 +50,8 @@ typedef struct fix16_vec3 {
     fix16_t y;
     /// @brief Not yet documented.
     fix16_t z;
-} fix16_vec3_t;
-#else
-// XXX: Forwarding. Nasty, but in order to fix this, we need to restructure the header files
-struct fix16_quat_t;
+} __packed __aligned(4) fix16_vec3_t;
 
-/// @brief Not yet documented.
-struct fix16_vec3_t {
-    /// @brief Not yet documented.
-    fix16_t x;
-    /// @brief Not yet documented.
-    fix16_t y;
-    /// @brief Not yet documented.
-    fix16_t z;
-
-    fix16_vec3_t() = default;
-    fix16_vec3_t(fix16_vec3_t&&)      = default;
-    fix16_vec3_t(const fix16_vec3_t&) = default;
-
-    constexpr inline fix16_vec3_t(fix16_t x_, fix16_t y_, fix16_t z_);
-
-    ~fix16_vec3_t() = default;
-
-    fix16_vec3_t& operator=(const fix16_vec3_t& other) = default;
-    fix16_vec3_t& operator=(fix16_vec3_t&& other)      = default;
-
-    inline const fix16_vec3_t operator+(const fix16_vec3_t& other) const;
-    inline const fix16_vec3_t operator-(const fix16_vec3_t& other) const;
-    inline const fix16_vec3_t operator-() const;
-    inline const fix16_vec3_t operator*(fix16_t scalar) const;
-    inline const fix16_vec3_t operator*(int32_t scalar) const;
-    inline const fix16_vec3_t operator*(uint32_t scalar) const;
-    inline const fix16_vec3_t operator*(const fix16_quat_t& other) const;
-    inline const fix16_vec3_t operator/(const fix16_t& other) const;
-
-    inline fix16_vec3_t& operator+=(const fix16_vec3_t& rhs);
-    inline fix16_vec3_t& operator-=(const fix16_vec3_t& rhs);
-    inline fix16_vec3_t& operator*=(fix16_t rhs);
-    inline fix16_vec3_t& operator*=(int32_t rhs);
-    inline fix16_vec3_t& operator/=(fix16_t rhs);
-
-    bool is_near_zero(fix16_t epsilon = 0.001_fp) const;
-
-    inline fix16_t length() const;
-
-    inline fix16_t length_sqrt() const;
-
-    inline void normalize();
-
-    inline fix16_vec3_t normalized();
-
-    inline void start_normalization() const;
-
-    void end_normalization();
-
-    inline size_t to_string(char* buffer, int32_t decimals = 7) const;
-
-    static constexpr inline fix16_vec3_t zero();
-
-    static constexpr inline fix16_vec3_t unit_x();
-
-    static constexpr inline fix16_vec3_t unit_y();
-
-    static constexpr inline fix16_vec3_t unit_z();
-
-    static inline fix16_t dot_product(const fix16_vec3_t& a, const fix16_vec3_t& b);
-
-    static inline fix16_vec3_t cross_product(const fix16_vec3_t& a, const fix16_vec3_t& b);
-
-    static fix16_vec3_t reflect(const fix16_vec3_t& v, const fix16_vec3_t& normal);
-
-    static inline constexpr fix16_vec3_t from_double(double x, double y, double z);
-};
-#endif /* !__cplusplus */
-
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 ///
 /// @param result Not yet documented.
@@ -251,7 +175,6 @@ fix16_vec3_inline_dot(const fix16_vec3_t *a, const fix16_vec3_t *b)
     return aux1;
 }
 __END_ASM
-#endif /* !__cplusplus */
 
 __BEGIN_DECLS
 
@@ -318,97 +241,228 @@ extern size_t fix16_vec3_str(const fix16_vec3_t *v0, char *buffer, int32_t decim
 __END_DECLS
 
 #if defined(__cplusplus)
-constexpr inline fix16_vec3_t::fix16_vec3_t(fix16_t x_, fix16_t y_, fix16_t z_) : x(x_), y(y_), z(z_) {}
 
-inline const fix16_vec3_t fix16_vec3_t::operator+(const fix16_vec3_t& v) const { return fix16_vec3_t{x + v.x, y + v.y, z + v.z}; }
-inline const fix16_vec3_t fix16_vec3_t::operator-(const fix16_vec3_t& v) const { return fix16_vec3_t{x - v.x, y - v.y, z - v.z}; }
-inline const fix16_vec3_t fix16_vec3_t::operator-() const { return fix16_vec3_t{-x, -y, -z}; }
-inline const fix16_vec3_t fix16_vec3_t::operator*(fix16_t scalar) const { return fix16_vec3_t{x * scalar, y * scalar, z * scalar}; }
-inline const fix16_vec3_t fix16_vec3_t::operator*(int32_t scalar) const { return fix16_vec3_t{x * scalar, y * scalar, z * scalar}; }
-inline const fix16_vec3_t fix16_vec3_t::operator*(uint32_t scalar) const { return fix16_vec3_t{x * scalar, y * scalar, z * scalar}; }
+namespace yaul {
 
-// XXX: Nasty, but in order to fix this, we need to restructure the header files
-extern "C" void fix16_quat_vec3_mul(const fix16_quat_t *q0, const fix16_vec3_t *v0, fix16_vec3_t *result);
+// XXX: Forwarding. Nasty, but in order to fix this, we need to restructure the header files
+struct fix16_quat;
 
-inline const fix16_vec3_t fix16_vec3_t::operator*(const fix16_quat_t& other) const {
-    fix16_vec3_t result;
-    fix16_quat_vec3_mul(&other, this, &result);
+/// @brief Not yet documented.
+struct __packed __aligned(4) fix16_vec3 {
+    /// @brief Not yet documented.
+    fix16 x;
+    /// @brief Not yet documented.
+    fix16 y;
+    /// @brief Not yet documented.
+    fix16 z;
 
-    return result;
-}
+    fix16_vec3() = default;
+    fix16_vec3(fix16_vec3&&) = default;
+    fix16_vec3(const fix16_vec3&) = default;
 
-inline fix16_vec3_t& fix16_vec3_t::operator+=(const fix16_vec3_t& v) {
-    x += v.x;
-    y += v.y;
-    z += v.z;
+    ~fix16_vec3() = default;
 
-    return *this;
-}
+    constexpr explicit fix16_vec3(const fix16_vec3_t& other)
+        : x(fix16{other.x})
+        , y(fix16{other.y})
+        , z(fix16{other.z})
+    {
+    }
 
-inline fix16_vec3_t& fix16_vec3_t::operator-=(const fix16_vec3_t& v) {
-    x -= v.x;
-    y -= v.y;
-    z -= v.z;
+    constexpr explicit fix16_vec3(fix16 x_, fix16 y_, fix16 z_)
+        : x(x_)
+        , y(y_)
+        , z(z_)
+    {
+    }
 
-    return *this;
-}
+    constexpr explicit fix16_vec3(fix16_t x_, fix16_t y_, fix16_t z_)
+        : x(fix16 { x_ })
+        , y(fix16 { y_ })
+        , z(fix16 { z_ })
+    {
+    }
 
-inline fix16_vec3_t& fix16_vec3_t::operator*=(fix16_t value) {
-    x = x * value;
-    y = y * value;
-    z = z * value;
+    fix16_vec3& operator=(const fix16_vec3& other) = default;
+    fix16_vec3& operator=(fix16_vec3&& other) = default;
 
-    return *this;
-}
+    const fix16_vec3 operator+(const fix16_vec3 &other) const
+    {
+        return fix16_vec3 { x + other.x, y + other.y, z + other.z };
+    }
 
-inline fix16_vec3_t& fix16_vec3_t::operator/=(fix16_t value) {
-    const fix16_t inv_value = 1.0_fp / value;
-    x = x * inv_value;
-    y = y * inv_value;
-    z = z * inv_value;
+    const fix16_vec3 operator-(const fix16_vec3 &other) const
+    {
+        return fix16_vec3 { x - other.x, y - other.y, z - other.z };
+    }
 
-    return *this;
-}
+    const fix16_vec3 operator-() const { return fix16_vec3 { -x, -y, -z }; }
 
-inline fix16_t fix16_vec3_t::length() const { return fix16_vec3_length(this); }
+    const fix16_vec3 operator*(fix16 scalar) const
+    {
+        return fix16_vec3 { x * scalar, y * scalar, z * scalar };
+    }
 
-inline fix16_t fix16_vec3_t::length_sqrt() const { return fix16_vec3_sqr_length(this); }
+    const fix16_vec3 operator*(fix16_t scalar) const
+    {
+        return fix16_vec3 { x * scalar, y * scalar, z * scalar };
+    }
 
-inline void fix16_vec3_t::normalize() { fix16_vec3_normalize(this); }
+    // Due to the forward declaration this can't be inline
+    const fix16_vec3 operator*(const fix16_quat &other) const;
 
-inline fix16_vec3_t fix16_vec3_t::normalized() {
-    fix16_vec3_t result;
-    fix16_vec3_normalized(this, &result);
+    const fix16_vec3 operator/(const fix16 other) const
+    {
+        return fix16_vec3 { x / other, y / other, z / other };
+    }
 
-    return result;
-}
+    const fix16_vec3 operator/(const fix16_t other) const
+    {
+        return fix16_vec3 { x / other, y / other, z / other };
+    }
 
-inline void fix16_vec3_t::start_normalization() const { cpu_divu_fix16_set(1.0_fp, length()); }
+    fix16_vec3& operator+=(const fix16_vec3& rhs)
+    {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
 
-constexpr inline fix16_vec3_t fix16_vec3_t::zero() { return fix16_vec3_t{0.0_fp, 0.0_fp, 0.0_fp}; }
+    fix16_vec3& operator-=(const fix16_vec3& rhs)
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
 
-constexpr inline fix16_vec3_t fix16_vec3_t::unit_x() { return fix16_vec3_t{1.0_fp, 0.0_fp, 0.0_fp}; }
+    fix16_vec3& operator*=(fix16 rhs)
+    {
+        x *= rhs;
+        y *= rhs;
+        z *= rhs;
+        return *this;
+    }
 
-constexpr inline fix16_vec3_t fix16_vec3_t::unit_y() { return fix16_vec3_t{0.0_fp, 1.0_fp, 0.0_fp}; }
+    fix16_vec3& operator*=(fix16_t rhs)
+    {
+        x *= rhs;
+        y *= rhs;
+        z *= rhs;
+        return *this;
+    }
 
-constexpr inline fix16_vec3_t fix16_vec3_t::unit_z() { return fix16_vec3_t{0.0_fp, 0.0_fp, 1.0_fp}; }
+    fix16_vec3& operator/=(fix16 rhs)
+    {
+        const fix16 inv_value = 1.0_fp / rhs;
+        x *= inv_value;
+        y *= inv_value;
+        z *= inv_value;
+        return *this;
+    }
 
-constexpr inline fix16_vec3_t fix16_vec3_t::from_double(double x, double y, double z) {
-    return fix16_vec3_t{fix16_t::from_double(x), fix16_t::from_double(y), fix16_t::from_double(z)};
-}
+    fix16_vec3& operator/=(fix16_t rhs)
+    {
+        const fix16 inv_value = 1.0_fp / rhs;
+        x *= inv_value;
+        y *= inv_value;
+        z *= inv_value;
+        return *this;
+    }
 
-inline fix16_t fix16_vec3_t::dot_product(const fix16_vec3_t& a, const fix16_vec3_t& b) {
-    return fix16_vec3_dot(&a, &b);
-}
+    bool is_near_zero(fix16 epsilon = 0.001_fp) const
+    {
+        return x.is_near_zero(epsilon) && y.is_near_zero(epsilon) &&
+            z.is_near_zero(epsilon);
+    }
 
-inline fix16_vec3_t fix16_vec3_t::cross_product(const fix16_vec3_t& a, const fix16_vec3_t& b) {
-    fix16_vec3_t result;
-    fix16_vec3_cross(&a, &b, &result);
+    fix16_vec3_t *as_fix16_vec3_t()
+    {
+        return reinterpret_cast<fix16_vec3_t *>(this);
+    }
 
-    return result;
-}
+    const fix16_vec3_t *as_fix16_vec3_t() const
+    {
+        return reinterpret_cast<const fix16_vec3_t *>(this);
+    }
 
-inline size_t fix16_vec3_t::to_string(char* buffer, int32_t decimals) const { return fix16_vec3_str(this, buffer, decimals); }
+    fix16 length() const
+    {
+        return fix16 { fix16_vec3_length(as_fix16_vec3_t()) };
+    }
+
+    fix16_t length_sqrt() const
+    {
+        return fix16_vec3_sqr_length(as_fix16_vec3_t());
+    }
+
+    void normalize() { fix16_vec3_normalize(as_fix16_vec3_t()); }
+
+    fix16_vec3 normalized()
+    {
+        fix16_vec3_t result;
+        fix16_vec3_normalized(as_fix16_vec3_t(), &result);
+
+        return fix16_vec3 { result.x, result.y, result.z };
+    }
+
+    void start_normalization() const
+    {
+        cpu_divu_fix16_set(FIX16(1.0), length().value);
+    }
+
+    void end_normalization()
+    {
+        const fix16 scale = fix16 { static_cast<fix16_t>(cpu_divu_quotient_get()) };
+        x *= scale;
+        y *= scale;
+        z *= scale;
+    }
+
+    static constexpr fix16_vec3 zero() { return fix16_vec3 { 0, 0, 0 }; }
+
+    static constexpr fix16_vec3 unit_x() { return fix16_vec3 { FIX16(1.0), 0, 0 }; }
+
+    static constexpr fix16_vec3 unit_y() { return fix16_vec3 { 0, FIX16(1.0), 0 }; }
+
+    static constexpr fix16_vec3 unit_z() { return fix16_vec3 { 0, 0, FIX16(1.0) }; }
+
+    static constexpr fix16_vec3 from_double(double x, double y, double z)
+    {
+        return fix16_vec3 { fix16::from_double(x), fix16::from_double(y),
+            fix16::from_double(z) };
+    }
+
+    static fix16 dot_product(const fix16_vec3 &a, const fix16_vec3 &b)
+    {
+        return fix16 { fix16_vec3_dot(a.as_fix16_vec3_t(),
+            b.as_fix16_vec3_t()) };
+    }
+
+    static fix16_vec3 cross_product(const fix16_vec3 &a, const fix16_vec3 &b)
+    {
+        fix16_vec3_t result;
+        fix16_vec3_cross(a.as_fix16_vec3_t(), b.as_fix16_vec3_t(), &result);
+
+        return fix16_vec3 { result.x, result.y, result.z };
+    }
+
+    static fix16_vec3 reflect(const fix16_vec3& v, const fix16_vec3& normal)
+    {
+        const fix16 factor = dot_product(v, normal) << 1;
+        const fix16_vec3 proj = normal * factor;
+        return (v - proj);
+    }
+
+    size_t to_string(char *buffer, int32_t decimals) const
+    {
+        return fix16_vec3_str(as_fix16_vec3_t(), buffer, decimals);
+    }
+};
+
+} // namespace yaul
+
 #endif /* __cplusplus */
 
 /// @}

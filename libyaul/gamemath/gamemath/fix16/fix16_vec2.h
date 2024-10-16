@@ -16,7 +16,6 @@
 /// @ingroup MATH_FIX16_VECTOR
 /// @{
 
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 ///
 /// @param x Not yet documented.
@@ -36,33 +35,15 @@
         FIX16(x),                                                              \
         FIX16(y)                                                               \
 })
-#endif /* !__cplusplus */
 
-#if !defined(__cplusplus)
 /// @param x Not yet documented.
 typedef struct fix16_vec2 {
     /// @param x Not yet documented.
     fix16_t x;
     /// @param x Not yet documented.
     fix16_t y;
-} fix16_vec2_t;
-#else
-/// @brief Not yet documented.
-struct fix16_vec2_t {
-    /// @brief Not yet documented.
-    fix16_t x;
-    /// @brief Not yet documented.
-    fix16_t y;
+} __packed __aligned(4) fix16_vec2_t;
 
-    fix16_vec2_t() { }
-    fix16_vec2_t(fix16_vec2_t&&)      = default;
-    fix16_vec2_t(const fix16_vec2_t&) = default;
-};
-
-static_assert(sizeof(fix16_vec2_t) == 8);
-#endif /* !__cplusplus */
-
-#if !defined(__cplusplus)
 /// @brief Not yet documented.
 ///
 /// @param result Not yet documented.
@@ -165,7 +146,6 @@ fix16_vec2_inline_dot(const fix16_vec2_t *a, const fix16_vec2_t *b)
     return aux1;
 }
 __END_ASM
-#endif /* !__cplusplus */
 
 __BEGIN_DECLS
 
@@ -207,8 +187,30 @@ extern fix16_t fix16_vec2_dot(const fix16_vec2_t *v0, const fix16_vec2_t *v1);
 /// @returns The string length, not counting the `NUL` character.
 extern size_t fix16_vec2_str(const fix16_vec2_t *v0, char *buffer, int32_t decimals);
 
+__END_DECLS
+
 /// @}
 
-__END_DECLS
+#if defined(__cplusplus)
+
+namespace yaul {
+
+/// @brief Not yet documented.
+struct fix16_vec2 {
+    /// @brief Not yet documented.
+    fix16_t x;
+    /// @brief Not yet documented.
+    fix16_t y;
+
+    fix16_vec2() { }
+    fix16_vec2(fix16_vec2&&) = default;
+    fix16_vec2(const fix16_vec2&) = default;
+};
+
+static_assert(sizeof(fix16_vec2) == sizeof(::fix16_vec2_t));
+
+} // namespace yaul
+
+#endif /* __cplusplus */
 
 #endif /* !_YAUL_GAMEMATH_FIX16_VEC2_H_ */
