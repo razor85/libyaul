@@ -3,6 +3,7 @@
  * See LICENSE for details.
  *
  * Israel Jacquez <mrkotfw@gmail.com>
+ * Romulo Leitao <abra185@gmail.com>
  */
 
 #if defined(__INTELLISENSE__) || defined(__RESHARPER__)

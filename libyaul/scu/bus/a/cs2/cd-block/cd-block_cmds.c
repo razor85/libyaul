@@ -3,7 +3,7 @@
  * See LICENSE for details.
  *
  * Israel Jacquez <mrkotfw@gmail.com>
- * Romulo Fernandes Machado <abra185@gmail.com>
+ * Romulo Leitao <abra185@gmail.com>
  */
 
 #include <cd-block.h>

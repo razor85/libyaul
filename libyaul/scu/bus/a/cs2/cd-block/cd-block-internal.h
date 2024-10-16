@@ -4,7 +4,7 @@
  *
  * Theo Beraku
  * Israel Jacquez <mrkotfw@gmail.com>
- * Romulo Fernandes Machado <abra185@gmail.com>
+ * Romulo Leitao <abra185@gmail.com>
  */
 
 #ifndef _CD_BLOCK_INTERNAL_H_

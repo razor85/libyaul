@@ -3,7 +3,7 @@
  * See LICENSE for details.
  *
  * Theo Beraku
- * Romulo Fernandes Machado <abra185@gmail.com>
+ * Romulo Leitao <abra185@gmail.com>
  */
 
 #include <cd-block.h>

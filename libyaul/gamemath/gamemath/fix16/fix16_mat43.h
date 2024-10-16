@@ -3,7 +3,7 @@
  * See LICENSE for details.
  *
  * Israel Jacquez <mrkotfw@gmail.com>
- * Romulo Fernandes <abra185@gmail.com>
+ * Romulo Leitao <abra185@gmail.com>
  */
 
 #ifndef _YAUL_GAMEMATH_FIX16_MAT43_H_
