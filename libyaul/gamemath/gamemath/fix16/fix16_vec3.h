@@ -9,6 +9,7 @@
 #ifndef _YAUL_GAMEMATH_FIX16_VEC3_H_
 #define _YAUL_GAMEMATH_FIX16_VEC3_H_
 
+#include <assert.h>
 #include <cpu/divu.h>
 
 #include <gamemath/fix16.h>
@@ -248,7 +249,8 @@ namespace yaul {
 struct fix16_quat;
 
 /// @brief Not yet documented.
-struct __packed __aligned(4) fix16_vec3 {
+struct __packed __aligned(4) fix16_vec3
+{
     /// @brief Not yet documented.
     fix16 x;
     /// @brief Not yet documented.
@@ -257,34 +259,34 @@ struct __packed __aligned(4) fix16_vec3 {
     fix16 z;
 
     fix16_vec3() = default;
-    fix16_vec3(fix16_vec3&&) = default;
-    fix16_vec3(const fix16_vec3&) = default;
+    fix16_vec3(fix16_vec3 &&) = default;
+    fix16_vec3(const fix16_vec3 &) = default;
 
     ~fix16_vec3() = default;
 
-    constexpr explicit fix16_vec3(const fix16_vec3_t& other)
-        : x(fix16{other.x})
-        , y(fix16{other.y})
-        , z(fix16{other.z})
+    constexpr explicit fix16_vec3(const fix16_vec3_t &other)
+        : x { fix16 { other.x } }
+        , y { fix16 { other.y } }
+        , z { fix16 { other.z } }
     {
     }
 
     constexpr explicit fix16_vec3(fix16 x_, fix16 y_, fix16 z_)
-        : x(x_)
-        , y(y_)
-        , z(z_)
+        : x { x_ }
+        , y { y_ }
+        , z { z_ }
     {
     }
 
     constexpr explicit fix16_vec3(fix16_t x_, fix16_t y_, fix16_t z_)
-        : x(fix16 { x_ })
-        , y(fix16 { y_ })
-        , z(fix16 { z_ })
+        : x { fix16 { x_ } }
+        , y { fix16 { y_ } }
+        , z { fix16 { z_ } }
     {
     }
 
-    fix16_vec3& operator=(const fix16_vec3& other) = default;
-    fix16_vec3& operator=(fix16_vec3&& other) = default;
+    fix16_vec3 &operator=(const fix16_vec3 &other) = default;
+    fix16_vec3 &operator=(fix16_vec3 &&other) = default;
 
     const fix16_vec3 operator+(const fix16_vec3 &other) const
     {
@@ -296,7 +298,10 @@ struct __packed __aligned(4) fix16_vec3 {
         return fix16_vec3 { x - other.x, y - other.y, z - other.z };
     }
 
-    const fix16_vec3 operator-() const { return fix16_vec3 { -x, -y, -z }; }
+    const fix16_vec3 operator-() const
+    {
+        return fix16_vec3 { -x, -y, -z };
+    }
 
     const fix16_vec3 operator*(fix16 scalar) const
     {
@@ -321,7 +326,7 @@ struct __packed __aligned(4) fix16_vec3 {
         return fix16_vec3 { x / other, y / other, z / other };
     }
 
-    fix16_vec3& operator+=(const fix16_vec3& rhs)
+    fix16_vec3 &operator+=(const fix16_vec3 &rhs)
     {
         x += rhs.x;
         y += rhs.y;
@@ -329,7 +334,7 @@ struct __packed __aligned(4) fix16_vec3 {
         return *this;
     }
 
-    fix16_vec3& operator-=(const fix16_vec3& rhs)
+    fix16_vec3 &operator-=(const fix16_vec3 &rhs)
     {
         x -= rhs.x;
         y -= rhs.y;
@@ -337,7 +342,7 @@ struct __packed __aligned(4) fix16_vec3 {
         return *this;
     }
 
-    fix16_vec3& operator*=(fix16 rhs)
+    fix16_vec3 &operator*=(fix16 rhs)
     {
         x *= rhs;
         y *= rhs;
@@ -345,7 +350,7 @@ struct __packed __aligned(4) fix16_vec3 {
         return *this;
     }
 
-    fix16_vec3& operator*=(fix16_t rhs)
+    fix16_vec3 &operator*=(fix16_t rhs)
     {
         x *= rhs;
         y *= rhs;
@@ -353,7 +358,7 @@ struct __packed __aligned(4) fix16_vec3 {
         return *this;
     }
 
-    fix16_vec3& operator/=(fix16 rhs)
+    fix16_vec3 &operator/=(fix16 rhs)
     {
         const fix16 inv_value = 1.0_fp / rhs;
         x *= inv_value;
@@ -362,7 +367,7 @@ struct __packed __aligned(4) fix16_vec3 {
         return *this;
     }
 
-    fix16_vec3& operator/=(fix16_t rhs)
+    fix16_vec3 &operator/=(fix16_t rhs)
     {
         const fix16 inv_value = 1.0_fp / rhs;
         x *= inv_value;
@@ -387,17 +392,55 @@ struct __packed __aligned(4) fix16_vec3 {
         return reinterpret_cast<const fix16_vec3_t *>(this);
     }
 
+    fix16 min() const
+    {
+        return ::min(::min(x, y), z);
+    }
+
+    fix16 max() const
+    {
+        return ::max(::max(x, y), z);
+    }
+
+    fix16 dot(const fix16_vec3 &other) const
+    {
+        return dot(*this, other);
+    }
+
+    fix16_vec3 cross(const fix16_vec3 &other) const
+    {
+        return cross(*this, other);
+    }
+
     fix16 length() const
     {
         return fix16 { fix16_vec3_length(as_fix16_vec3_t()) };
     }
 
-    fix16_t length_sqrt() const
+    fix16 length_squared() const
     {
-        return fix16_vec3_sqr_length(as_fix16_vec3_t());
+        return fix16 { fix16_vec3_sqr_length(as_fix16_vec3_t()) };
     }
 
-    void normalize() { fix16_vec3_normalize(as_fix16_vec3_t()); }
+    fix16 operator[](int32_t index) const
+    {
+        switch (index) {
+        case 0:
+            return x;
+        case 1:
+            return y;
+        case 2:
+            return z;
+        default:
+            assert(false);
+            return fix16::zero();
+        }
+    }
+
+    void normalize()
+    {
+        fix16_vec3_normalize(as_fix16_vec3_t());
+    }
 
     fix16_vec3 normalized()
     {
@@ -414,33 +457,49 @@ struct __packed __aligned(4) fix16_vec3 {
 
     void end_normalization()
     {
-        const fix16 scale = fix16 { static_cast<fix16_t>(cpu_divu_quotient_get()) };
+        const fix16 scale = fix16 { static_cast<fix16_t>(
+            cpu_divu_quotient_get()) };
         x *= scale;
         y *= scale;
         z *= scale;
     }
 
-    static constexpr fix16_vec3 zero() { return fix16_vec3 { 0, 0, 0 }; }
+    static constexpr fix16_vec3 zero()
+    {
+        return fix16_vec3 { 0, 0, 0 };
+    }
 
-    static constexpr fix16_vec3 unit_x() { return fix16_vec3 { FIX16(1.0), 0, 0 }; }
+    static constexpr fix16_vec3 unit_x()
+    {
+        return fix16_vec3 { FIX16(1.0), 0, 0 };
+    }
 
-    static constexpr fix16_vec3 unit_y() { return fix16_vec3 { 0, FIX16(1.0), 0 }; }
+    static constexpr fix16_vec3 unit_y()
+    {
+        return fix16_vec3 { 0, FIX16(1.0), 0 };
+    }
 
-    static constexpr fix16_vec3 unit_z() { return fix16_vec3 { 0, 0, FIX16(1.0) }; }
+    static constexpr fix16_vec3 unit_z()
+    {
+        return fix16_vec3 { 0, 0, FIX16(1.0) };
+    }
 
     static constexpr fix16_vec3 from_double(double x, double y, double z)
     {
-        return fix16_vec3 { fix16::from_double(x), fix16::from_double(y),
-            fix16::from_double(z) };
+        return fix16_vec3 {
+            fix16::from_double(x),
+            fix16::from_double(y),
+            fix16::from_double(z),
+        };
     }
 
-    static fix16 dot_product(const fix16_vec3 &a, const fix16_vec3 &b)
+    static fix16 dot(const fix16_vec3 &a, const fix16_vec3 &b)
     {
         return fix16 { fix16_vec3_dot(a.as_fix16_vec3_t(),
             b.as_fix16_vec3_t()) };
     }
 
-    static fix16_vec3 cross_product(const fix16_vec3 &a, const fix16_vec3 &b)
+    static fix16_vec3 cross(const fix16_vec3 &a, const fix16_vec3 &b)
     {
         fix16_vec3_t result;
         fix16_vec3_cross(a.as_fix16_vec3_t(), b.as_fix16_vec3_t(), &result);
@@ -448,9 +507,9 @@ struct __packed __aligned(4) fix16_vec3 {
         return fix16_vec3 { result.x, result.y, result.z };
     }
 
-    static fix16_vec3 reflect(const fix16_vec3& v, const fix16_vec3& normal)
+    static fix16_vec3 reflect(const fix16_vec3 &v, const fix16_vec3 &normal)
     {
-        const fix16 factor = dot_product(v, normal) << 1;
+        const fix16 factor = dot(v, normal) << 1;
         const fix16_vec3 proj = normal * factor;
         return (v - proj);
     }
@@ -460,6 +519,12 @@ struct __packed __aligned(4) fix16_vec3 {
         return fix16_vec3_str(as_fix16_vec3_t(), buffer, decimals);
     }
 };
+
+inline fix16_vec3
+operator*(fix16 scalar, const fix16_vec3 &v)
+{
+    return fix16_vec3 { v.x * scalar, v.y * scalar, v.z * scalar };
+}
 
 } // namespace yaul
 

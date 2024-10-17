@@ -9,6 +9,7 @@
 #ifndef _YAUL_GAMEMATH_FIX16_VEC2_H_
 #define _YAUL_GAMEMATH_FIX16_VEC2_H_
 
+#include <assert.h>
 #include <gamemath/fix16.h>
 
 /// @addtogroup MATH_FIX16_VECTOR
@@ -196,16 +197,241 @@ __END_DECLS
 namespace yaul {
 
 /// @brief Not yet documented.
-struct fix16_vec2 {
+struct __packed __aligned(4) fix16_vec2
+{
     /// @brief Not yet documented.
-    fix16_t x;
+    fix16 x;
     /// @brief Not yet documented.
-    fix16_t y;
+    fix16 y;
 
-    fix16_vec2() { }
-    fix16_vec2(fix16_vec2&&) = default;
-    fix16_vec2(const fix16_vec2&) = default;
+    fix16_vec2()
+    {
+    }
+    fix16_vec2(fix16_vec2 &&) = default;
+    fix16_vec2(const fix16_vec2 &) = default;
+
+    constexpr explicit fix16_vec2(fix16_t x, fix16_t y)
+        : x { x }
+        , y { y }
+    {
+    }
+
+    constexpr explicit fix16_vec2(fix16 x, fix16 y)
+        : x { x }
+        , y { y }
+    {
+    }
+
+    fix16_vec2 operator>>(int i) const
+    {
+        return fix16_vec2 { x >> i, y >> i };
+    }
+
+    fix16_vec2 operator<<(int i) const
+    {
+        return fix16_vec2 { x << i, y << i };
+    }
+
+    fix16_vec2 &operator=(const fix16_vec2 &other) = default;
+
+    fix16_vec2 &operator=(fix16_vec2 &&other) = default;
+
+    const fix16_vec2 operator+(const fix16_vec2 &other) const
+    {
+        return fix16_vec2 { x + other.x, y + other.y };
+    }
+
+    const fix16_vec2 operator-(const fix16_vec2 &other) const
+    {
+        return fix16_vec2 { x - other.x, y - other.y };
+    }
+
+    const fix16_vec2 operator-() const
+    {
+        return fix16_vec2 { -x, -y };
+    }
+
+    const fix16_vec2 operator*(fix16 scalar) const
+    {
+        return fix16_vec2 { x * scalar, y * scalar };
+    }
+
+    const fix16_vec2 operator*(fix16_t scalar) const
+    {
+        return fix16_vec2 { x * scalar, y * scalar };
+    }
+
+    const fix16_vec2 operator/(const fix16 other) const
+    {
+        return fix16_vec2 { x / other, y / other };
+    }
+
+    const fix16_vec2 operator/(const fix16_t other) const
+    {
+        return fix16_vec2 { x / other, y / other };
+    }
+
+    fix16_vec2 &operator+=(const fix16_vec2 &v)
+    {
+        x += v.x;
+        y += v.y;
+        return *this;
+    }
+
+    fix16_vec2 &operator-=(const fix16_vec2 &v)
+    {
+        x -= v.x;
+        y -= v.y;
+        return *this;
+    }
+
+    fix16_vec2 &operator*=(fix16 value)
+    {
+        x *= value;
+        y *= value;
+        return *this;
+    }
+
+    fix16_vec2 &operator/=(fix16 value)
+    {
+        x /= value;
+        y /= value;
+        return *this;
+    }
+
+    fix16 operator[](int32_t index) const
+    {
+        switch (index) {
+        case 0:
+            return x;
+        case 1:
+            return y;
+        default:
+            assert(false);
+            return fix16::zero();
+        }
+    }
+
+    bool is_zero() const
+    {
+        return x == 0 && y == 0;
+    }
+
+    bool is_near_zero(const fix16 epsilon = 0.001_fp) const
+    {
+        return x.is_near_zero(epsilon) && y.is_near_zero(epsilon);
+    }
+
+    fix16_vec2_t *as_fix16_vec2_t()
+    {
+        return reinterpret_cast<fix16_vec2_t *>(this);
+    }
+
+    const fix16_vec2_t *as_fix16_vec2_t() const
+    {
+        return reinterpret_cast<const fix16_vec2_t *>(this);
+    }
+
+    fix16 dot(const fix16_vec2 &other) const
+    {
+        return dot(*this, other);
+    }
+
+    fix16 cross(const fix16_vec2 &other) const
+    {
+        return cross(*this, other);
+    }
+
+    fix16 length_squared() const
+    {
+        return dot(*this, *this);
+    }
+
+    fix16 length() const
+    {
+        return dot(*this, *this).sqrt();
+    }
+
+    void start_normalization() const
+    {
+        fix16::start_divu_1_over_value(length());
+    }
+
+    static void finish_normalization(fix16_vec2 & result)
+    {
+        const fix16 denom { fix16::get_divu_quotient() };
+        result.x *= denom;
+        result.y *= denom;
+    }
+
+    void normalize()
+    {
+        start_normalization();
+        finish_normalization(*this);
+    }
+
+    fix16 approximate_distance(const fix16_vec2 &other) const
+    {
+        const fix16 first { x - other.x };
+        const fix16 second { y - other.y };
+        return first.approximate_distance(second);
+    }
+
+    static fix16 dot(const fix16_vec2 &a, const fix16_vec2 &b)
+    {
+        return fix16 { fix16_vec2_dot(a.as_fix16_vec2_t(),
+            b.as_fix16_vec2_t()) };
+    }
+
+    static fix16 cross(const fix16_vec2 &a, const fix16_vec2 &b)
+    {
+        return fix16 { (a.x * b.y) - (a.y * b.x) };
+    }
+
+    fix16_vec2 reflect(const fix16_vec2 &normal) const
+    {
+        // this - 2 * proj(this, normal)
+        const fix16 factor { dot(*this, normal).value << 1 };
+        const fix16_vec2 proj {
+            factor * normal.x,
+            factor * normal.y,
+        };
+
+        return fix16_vec2 {
+            x - proj.x,
+            y - proj.y,
+        };
+    }
+
+    static constexpr fix16_vec2 from_double(double x, double y)
+    {
+        return fix16_vec2 {
+            fix16::from_double(x),
+            fix16::from_double(y),
+        };
+    }
+
+    static constexpr fix16_vec2 zero()
+    {
+        return fix16_vec2 { 0, 0 };
+    }
+
+    static constexpr fix16_vec2 unit_x()
+    {
+        return fix16_vec2 { FIX16(1.0), 0 };
+    }
+
+    static constexpr fix16_vec2 unit_y()
+    {
+        return fix16_vec2 { 0, FIX16(1.0) };
+    }
 };
+
+inline fix16_vec2
+operator*(fix16 scalar, const fix16_vec2 &v)
+{
+    return fix16_vec2 { v.x * scalar, v.y * scalar };
+}
 
 static_assert(sizeof(fix16_vec2) == sizeof(::fix16_vec2_t));
 
