@@ -204,21 +204,19 @@ struct __packed __aligned(4) fix16_vec2
     /// @brief Not yet documented.
     fix16 y;
 
-    fix16_vec2()
-    {
-    }
+    fix16_vec2() = default;
     fix16_vec2(fix16_vec2 &&) = default;
     fix16_vec2(const fix16_vec2 &) = default;
 
-    constexpr explicit fix16_vec2(fix16_t x, fix16_t y)
-        : x { x }
-        , y { y }
+    constexpr explicit fix16_vec2(fix16_t x_, fix16_t y_)
+        : x { x_ }
+        , y { y_ }
     {
     }
 
-    constexpr explicit fix16_vec2(fix16 x, fix16 y)
-        : x { x }
-        , y { y }
+    constexpr explicit fix16_vec2(fix16 x_, fix16 y_)
+        : x { x_ }
+        , y { y_ }
     {
     }
 
@@ -299,19 +297,6 @@ struct __packed __aligned(4) fix16_vec2
         return *this;
     }
 
-    fix16 operator[](int32_t index) const
-    {
-        switch (index) {
-        case 0:
-            return x;
-        case 1:
-            return y;
-        default:
-            assert(false);
-            return fix16::zero();
-        }
-    }
-
     bool is_zero() const
     {
         return x == 0 && y == 0;
@@ -330,6 +315,12 @@ struct __packed __aligned(4) fix16_vec2
     const fix16_vec2_t *as_fix16_vec2_t() const
     {
         return reinterpret_cast<const fix16_vec2_t *>(this);
+    }
+
+    void zero()
+    {
+        x = 0.0_fp;
+        y = 0.0_fp;
     }
 
     fix16 dot(const fix16_vec2 &other) const
@@ -357,13 +348,6 @@ struct __packed __aligned(4) fix16_vec2
         fix16::start_divu_1_over_value(length());
     }
 
-    static void finish_normalization(fix16_vec2 & result)
-    {
-        const fix16 denom { fix16::get_divu_quotient() };
-        result.x *= denom;
-        result.y *= denom;
-    }
-
     void normalize()
     {
         start_normalization();
@@ -377,6 +361,44 @@ struct __packed __aligned(4) fix16_vec2
         return first.approximate_distance(second);
     }
 
+    fix16_vec2 reflect(const fix16_vec2 &normal) const
+    {
+        return reflect(*this, normal);
+    }
+
+    fix16 &operator[](int32_t index)
+    {
+        switch (index) {
+        case 0:
+            return x;
+        case 1:
+            return y;
+        default:
+            assert(false);
+            return x;
+        }
+    }
+
+    fix16 operator[](int32_t index) const
+    {
+        switch (index) {
+        case 0:
+            return x;
+        case 1:
+            return y;
+        default:
+            assert(false);
+            return x;
+        }
+    }
+
+    static void finish_normalization(fix16_vec2 & result)
+    {
+        const fix16 denom { fix16::get_divu_quotient() };
+        result.x *= denom;
+        result.y *= denom;
+    }
+
     static fix16 dot(const fix16_vec2 &a, const fix16_vec2 &b)
     {
         return fix16 { fix16_vec2_dot(a.as_fix16_vec2_t(),
@@ -388,18 +410,18 @@ struct __packed __aligned(4) fix16_vec2
         return fix16 { (a.x * b.y) - (a.y * b.x) };
     }
 
-    fix16_vec2 reflect(const fix16_vec2 &normal) const
+    static fix16_vec2 reflect(const fix16_vec2 &v, const fix16_vec2 &normal)
     {
-        // this - 2 * proj(this, normal)
-        const fix16 factor { dot(*this, normal).value << 1 };
+        // v - 2 * proj(v, normal)
+        const fix16 factor { dot(v, normal).value << 1 };
         const fix16_vec2 proj {
             factor * normal.x,
             factor * normal.y,
         };
 
         return fix16_vec2 {
-            x - proj.x,
-            y - proj.y,
+            v.x - proj.x,
+            v.y - proj.y,
         };
     }
 
@@ -411,21 +433,20 @@ struct __packed __aligned(4) fix16_vec2
         };
     }
 
-    static constexpr fix16_vec2 zero()
-    {
-        return fix16_vec2 { 0, 0 };
-    }
+    static const fix16_vec2 Zero;
 
-    static constexpr fix16_vec2 unit_x()
-    {
-        return fix16_vec2 { FIX16(1.0), 0 };
-    }
+    static const fix16_vec2 Unit_x;
 
-    static constexpr fix16_vec2 unit_y()
-    {
-        return fix16_vec2 { 0, FIX16(1.0) };
-    }
+    static const fix16_vec2 Unit_y;
 };
+
+inline const fix16_vec2 fix16_vec2::Zero { fix16_vec2::from_double(0.0, 0.0) };
+
+inline const fix16_vec2 fix16_vec2::Unit_x { fix16_vec2::from_double(1.0,
+    0.0) };
+
+inline const fix16_vec2 fix16_vec2::Unit_y { fix16_vec2::from_double(0.0,
+    1.0) };
 
 inline fix16_vec2
 operator*(fix16 scalar, const fix16_vec2 &v)

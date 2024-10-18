@@ -135,8 +135,6 @@ struct __packed __aligned(4) fix16_quat {
     {
     }
 
-    ~fix16_quat() = default;
-
     fix16_quat &operator=(const fix16_quat &other) = default;
     fix16_quat &operator=(fix16_quat &&other) = default;
 
@@ -148,6 +146,12 @@ struct __packed __aligned(4) fix16_quat {
     const fix16_quat_t* as_fix16_quat_t() const
     {
       return reinterpret_cast<const fix16_quat_t*>(this);
+    }
+
+    void identity()
+    {
+        comp.zero();
+        w = fix16::One;
     }
 
     const fix16_quat operator*(const fix16_quat &other) const

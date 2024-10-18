@@ -392,6 +392,13 @@ struct __packed __aligned(4) fix16_vec3
         return reinterpret_cast<const fix16_vec3_t *>(this);
     }
 
+    void zero()
+    {
+        x = 0.0_fp;
+        y = 0.0_fp;
+        z = 0.0_fp;
+    }
+
     fix16 min() const
     {
         return ::min(::min(x, y), z);
@@ -421,6 +428,21 @@ struct __packed __aligned(4) fix16_vec3
     {
         return fix16 { fix16_vec3_sqr_length(as_fix16_vec3_t()) };
     }
+    
+    fix16& operator[](int32_t index)
+    {
+        switch (index) {
+        case 0:
+            return x;
+        case 1:
+            return y;
+        case 2:
+            return z;
+        default:
+            assert(false);
+            return x;
+        }
+    }
 
     fix16 operator[](int32_t index) const
     {
@@ -433,7 +455,7 @@ struct __packed __aligned(4) fix16_vec3
             return z;
         default:
             assert(false);
-            return fix16::zero();
+            return x;
         }
     }
 
@@ -464,25 +486,13 @@ struct __packed __aligned(4) fix16_vec3
         z *= scale;
     }
 
-    static constexpr fix16_vec3 zero()
-    {
-        return fix16_vec3 { 0, 0, 0 };
-    }
-
-    static constexpr fix16_vec3 unit_x()
-    {
-        return fix16_vec3 { FIX16(1.0), 0, 0 };
-    }
-
-    static constexpr fix16_vec3 unit_y()
-    {
-        return fix16_vec3 { 0, FIX16(1.0), 0 };
-    }
-
-    static constexpr fix16_vec3 unit_z()
-    {
-        return fix16_vec3 { 0, 0, FIX16(1.0) };
-    }
+    static const fix16_vec3 Zero;
+    
+    static const fix16_vec3 Unit_x;
+    
+    static const fix16_vec3 Unit_y;
+    
+    static const fix16_vec3 Unit_z;
 
     static constexpr fix16_vec3 from_double(double x, double y, double z)
     {
@@ -519,6 +529,14 @@ struct __packed __aligned(4) fix16_vec3
         return fix16_vec3_str(as_fix16_vec3_t(), buffer, decimals);
     }
 };
+
+inline const fix16_vec3 fix16_vec3::Zero { fix16_vec3::from_double(0.0, 0.0, 0.0) };
+
+inline const fix16_vec3 fix16_vec3::Unit_x { fix16_vec3::from_double(1.0, 0.0, 0.0) };
+
+inline const fix16_vec3 fix16_vec3::Unit_y { fix16_vec3::from_double(0.0, 1.0, 0.0) };
+
+inline const fix16_vec3 fix16_vec3::Unit_z { fix16_vec3::from_double(0.0, 0.0, 1.0) };
 
 inline fix16_vec3
 operator*(fix16 scalar, const fix16_vec3 &v)

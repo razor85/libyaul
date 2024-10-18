@@ -44,4 +44,22 @@ fix16::deg_to_angle() const
     return angle { static_cast<::angle_t>((deg_to_rad() * OneOver2Pi).value) };
 }
 
+void
+fix16::start_divu_1_over_value(fix16 v)
+{
+    ::cpu_divu_fix16_set(One.value, v.value);
+}
+
+void
+fix16::start_divu(fix16 num, fix16 denom)
+{
+    ::cpu_divu_fix16_set(num.value, denom.value);
+}
+
+fix16
+fix16::get_divu_quotient()
+{
+    return fix16 { static_cast<fix16_t>(::cpu_divu_quotient_get()) };
+}
+
 } // namespace yaul

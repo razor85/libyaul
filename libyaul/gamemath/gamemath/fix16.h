@@ -298,13 +298,6 @@ __END_DECLS
 
 #if defined(__cplusplus)
 
-__BEGIN_DECLS
-
-static void cpu_divu_fix16_set(fix16_t, fix16_t);
-static uint32_t cpu_divu_quotient_get(void);
-
-__END_DECLS
-
 namespace yaul {
 
 struct angle;
@@ -315,14 +308,19 @@ struct __packed __aligned(4) fix16
     fix16_t value;
 
     fix16() = default;
+    fix16(const fix16&) = default;
+    fix16(fix16&&) = default;
 
-    explicit constexpr fix16(fix16_t v)
+    constexpr explicit fix16(fix16_t v)
         : value(v)
     {
     }
 
+    fix16 &operator=(const fix16 &) = default;
+    fix16 &operator=(fix16 &&) = default;
+
     // For dealing with C
-    explicit constexpr operator fix16_t() const
+    constexpr explicit operator fix16_t() const
     {
         return value;
     }
@@ -331,10 +329,12 @@ struct __packed __aligned(4) fix16
     {
         return fix16 { value + other.value };
     }
+
     constexpr fix16 operator-(fix16 other) const
     {
         return fix16 { value - other.value };
     }
+
     constexpr fix16 operator-() const
     {
         return fix16 { -value };
@@ -344,6 +344,7 @@ struct __packed __aligned(4) fix16
     {
         return fix16 { fix16_mul(value, other.value) };
     }
+
     fix16 operator/(fix16 other) const
     {
         return fix16 { fix16_div(value, other.value) };
@@ -353,6 +354,7 @@ struct __packed __aligned(4) fix16
     {
         return fix16 { fix16_mul(value, other) };
     }
+
     fix16 operator/(fix16_t other) const
     {
         return fix16 { fix16_div(value, other) };
@@ -362,6 +364,7 @@ struct __packed __aligned(4) fix16
     {
         return fix16 { value >> i };
     }
+
     constexpr fix16 operator<<(int32_t i) const
     {
         return fix16 { value << i };
@@ -372,16 +375,19 @@ struct __packed __aligned(4) fix16
         value += rhs.value;
         return *this;
     }
+
     fix16 &operator-=(fix16 rhs)
     {
         value -= rhs.value;
         return *this;
     }
+
     fix16 &operator*=(fix16 rhs)
     {
         value = fix16_mul(value, rhs.value);
         return *this;
     }
+
     fix16 &operator/=(fix16 rhs)
     {
         value = fix16_div(value, rhs.value);
@@ -393,6 +399,7 @@ struct __packed __aligned(4) fix16
         value = fix16_mul(value, rhs);
         return *this;
     }
+
     fix16 &operator/=(fix16_t rhs)
     {
         value = fix16_div(value, rhs);
@@ -404,6 +411,7 @@ struct __packed __aligned(4) fix16
         value >>= i;
         return *this;
     }
+
     fix16 &operator<<=(int32_t i)
     {
         value <<= i;
@@ -414,18 +422,22 @@ struct __packed __aligned(4) fix16
     {
         return value < other.value;
     }
+
     bool operator>(fix16 other) const
     {
         return value > other.value;
     }
+
     bool operator<=(fix16 other) const
     {
         return value <= other.value;
     }
+
     bool operator>=(fix16 other) const
     {
         return value >= other.value;
     }
+
     bool operator==(fix16 other) const
     {
         return value == other.value;
@@ -435,18 +447,22 @@ struct __packed __aligned(4) fix16
     {
         return value < other;
     }
+
     bool operator>(fix16_t other) const
     {
         return value > other;
     }
+
     bool operator<=(fix16_t other) const
     {
         return value <= other;
     }
+
     bool operator>=(fix16_t other) const
     {
         return value >= other;
     }
+
     bool operator==(fix16_t other) const
     {
         return value == other;
@@ -570,36 +586,24 @@ struct __packed __aligned(4) fix16
         return fix16 { FIX16(value) };
     }
 
-    static void start_divu_1_over_value(fix16 v)
-    {
-        ::cpu_divu_fix16_set(one().value, v.value);
-    }
+    static void start_divu_1_over_value(fix16 v);
 
-    static void start_divu(fix16 num, fix16 denom)
-    {
-        ::cpu_divu_fix16_set(num.value, denom.value);
-    }
+    static void start_divu(fix16 num, fix16 denom);
 
-    static fix16 get_divu_quotient()
-    {
-        return fix16 { static_cast<fix16_t>(::cpu_divu_quotient_get()) };
-    }
+    static fix16 get_divu_quotient();
 
-    static constexpr fix16 zero()
-    {
-        return fix16 { FIX16(0.0) };
-    }
+    static const fix16 Zero;
 
-    static constexpr fix16 one()
-    {
-        return fix16 { FIX16(1.0) };
-    }
+    static const fix16 One;
 
-    static constexpr fix16 minus_one()
-    {
-        return fix16 { FIX16(-1.0) };
-    }
+    static const fix16 Minus_one;
 };
+    
+inline const fix16 fix16::Zero{ fix16::from_double(0.0) };
+
+inline const fix16 fix16::One{ fix16::from_double(1.0) };
+
+inline const fix16 fix16::Minus_one{ fix16::from_double(-1.0) };
 
 static_assert(sizeof(fix16) == sizeof(::fix16_t));
 
